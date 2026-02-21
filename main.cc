@@ -1,28 +1,38 @@
 #include <print>
 #include <vector>
 #include <memory>
+#include <ranges>
 #include <functional>
 #include <stack>
 
 #include <gfx/gfx.h>
 
-namespace {
+namespace ui {
 
 class Box {
 protected:
     const gfx::Color m_color;
-    gfx::Rect m_rect;
+    const float m_margin;
+    gfx::Rect m_box;
 
 public:
-    explicit Box(gfx::Color color) : m_color(color) { }
+    Box(gfx::Color color, float margin=1.0f)
+        : m_color(color)
+        , m_margin(margin)
+    { }
+
     virtual ~Box() = default;
 
-    [[nodiscard]] gfx::Rect& get_rect() {
-        return m_rect;
+    [[nodiscard]] float get_margin() const {
+        return m_margin;
+    }
+
+    [[nodiscard]] gfx::Rect& get_box() {
+        return m_box;
     }
 
     virtual void draw(gfx::Renderer& rd) const {
-        rd.draw_rectangle(m_rect, m_color);
+        rd.draw_rectangle(m_box, m_color);
     }
 
     virtual void calculate_layout() { }
@@ -30,7 +40,7 @@ public:
     virtual void print(int spacing) {
         for (int i = 0; i < spacing; ++i)
             std::print(" ");
-        std::println("Box {}", m_rect);
+        std::println("Box {}", m_box);
     }
 
 };
@@ -40,36 +50,39 @@ protected:
     std::vector<std::unique_ptr<Box>> m_children;
 
 public:
-    Container(std::vector<std::unique_ptr<Box>> children, gfx::Color color)
-        : Box(color)
+    Container(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=1.0f)
+        : Box(color, margin)
         , m_children(std::move(children))
     { }
 
     void draw(gfx::Renderer& rd) const override {
         Box::draw(rd);
 
-        for (const auto& child : m_children)
+        for (const auto& child : m_children) {
             child->draw(rd);
+        }
     }
 
 };
 
 class HorizontalContainer : public Container {
 public:
-    HorizontalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color)
-    : Container(std::move(children), color)
+    HorizontalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=1.0f)
+    : Container(std::move(children), color, margin)
     { }
 
     void calculate_layout() override {
-        int elem_width = m_rect.width / m_children.size();
+        int elem_width = m_box.width / m_children.size();
 
         int x = 0;
         for (auto& child : m_children) {
-            auto& rect = child->get_rect();
-            rect.height = m_rect.height;
-            rect.width = elem_width;
-            rect.y = m_rect.y;
-            rect.x = m_rect.x + x;
+            auto& box = child->get_box();
+            float margin = child->get_margin();
+
+            box.height = m_box.height - margin*2.0f;
+            box.width = elem_width - margin*2.0f;
+            box.y = m_box.y + margin;
+            box.x = m_box.x + x + margin;
             x += elem_width;
 
             child->calculate_layout();
@@ -80,30 +93,33 @@ public:
         for (int i = 0; i < spacing; ++i)
             std::print(" ");
 
-        std::println("Horizontal {}", m_rect);
+        std::println("Horizontal {}", m_box);
 
-        for (auto& child : m_children)
+        for (auto& child : m_children) {
             child->print(spacing+1);
+        }
     }
 
 };
 
 class VerticalContainer : public Container {
 public:
-    VerticalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color)
-    : Container(std::move(children), color)
+    VerticalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=1.0f)
+    : Container(std::move(children), color, margin)
     { }
 
     void calculate_layout() override {
-        int elem_height = m_rect.height / m_children.size();
+        int elem_height = m_box.height / m_children.size();
 
         int y = 0;
         for (auto& child : m_children) {
-            auto& rect = child->get_rect();
-            rect.height = elem_height;
-            rect.width = m_rect.width;
-            rect.x = m_rect.x;
-            rect.y = m_rect.y + y;
+            auto& box = child->get_box();
+            float margin = child->get_margin();
+
+            box.height = elem_height - margin*2.0f;
+            box.width = m_box.width - margin*2.0f;
+            box.x = m_box.x + margin;
+            box.y = m_box.y + y + margin;
             y += elem_height;
 
             child->calculate_layout();
@@ -114,10 +130,11 @@ public:
         for (int i = 0; i < spacing; ++i)
             std::print(" ");
 
-        std::println("Vertical {}", m_rect);
+        std::println("Vertical {}", m_box);
 
-        for (auto& child : m_children)
+        for (auto& child : m_children) {
             child->print(spacing+1);
+        }
     }
 
 };
@@ -133,8 +150,8 @@ class Ui {
 public:
     explicit Ui(Context& context) : m_context(context) { }
 
-    void box(gfx::Color color) {
-        m_context.top().emplace_back(std::make_unique<Box>(color));
+    void box(gfx::Color color, float margin=1.0f) {
+        m_context.top().emplace_back(std::make_unique<Box>(color, margin));
     }
 
     void horizontal(gfx::Color color, Fn fn) {
@@ -168,7 +185,7 @@ public:
 
         assert(m_context.size() == 1);
         auto& root = m_context.top().front();
-        root->get_rect() = rd.get_surface().get_as_rect();
+        root->get_box() = rd.get_surface().get_as_rect();
         root->calculate_layout();
         root->draw(rd);
 
@@ -178,7 +195,7 @@ public:
 };
 
 
-} // namespace
+} // namespace ui
 
 int main() {
 
@@ -186,24 +203,20 @@ int main() {
         .enable_resizing(true);
 
     gfx::Window window(1920, 1080, "ui", flags);
-    UserInterface ui;
+    ui::UserInterface ui;
 
     window.draw_loop([&](gfx::Renderer& rd) {
         rd.clear_background(gfx::Color::black());
 
-        ui.root(rd, gfx::Color::black(), [&](Ui& ui) {
+        ui.root(rd, gfx::Color::black(), [&](ui::Ui& ui) {
 
-            ui.horizontal(gfx::Color::black(), [&] {
-                ui.box(gfx::Color::orange());
-                ui.box(gfx::Color::red());
+            ui.horizontal(gfx::Color::gray(), [&] {
+                ui.box(gfx::Color::white(), 30);
+                ui.box(gfx::Color::blue(), 30);
             });
 
-            ui.box(gfx::Color::blue());
-
-            ui.horizontal(gfx::Color::black(), [&] {
-                ui.box(gfx::Color::orange());
-                ui.box(gfx::Color::red());
-            });
+            ui.box(gfx::Color::orange(), 30);
+            ui.box(gfx::Color::red(), 30);
 
         });
 
