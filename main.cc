@@ -77,8 +77,7 @@ public:
     {
         m_fixed_height = true;
         m_box.height = m_fontsize;
-        m_fixed_width = true;
-        m_box.width = m_font.measure_text(m_text, m_fontsize);
+        m_min_width = m_font.measure_text(m_text, m_fontsize);
     }
 
     void draw(gfx::Renderer& rd) const override {
@@ -299,7 +298,7 @@ int main() {
                     ui.box(gfx::Color::red());
                 });
                 ui.box(gfx::Color::green());
-                ui.label("bar", gfx::Color::lightblue(), font);
+                ui.label("ui library", gfx::Color::lightblue(), font);
             });
 
 
