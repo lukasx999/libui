@@ -1,3 +1,4 @@
+#include <numeric>
 #include <print>
 #include <vector>
 #include <memory>
@@ -7,6 +8,8 @@
 
 #include <gfx/gfx.h>
 
+#define DBG(value) std::println("{}: {}", #value, value);
+
 namespace ui {
 
 class Box {
@@ -14,6 +17,9 @@ protected:
     const gfx::Color m_color;
     const float m_margin;
     gfx::Rect m_box;
+    float m_min_width = 0.0f;
+    bool m_fixed_height = false;
+    bool m_fixed_width = false;
 
 public:
     Box(gfx::Color color, float margin=0.0f)
@@ -22,6 +28,18 @@ public:
     { }
 
     virtual ~Box() = default;
+
+    [[nodiscard]] bool has_fixed_height() const {
+        return m_fixed_height;
+    }
+
+    [[nodiscard]] bool has_fixed_width() const {
+        return m_fixed_width;
+    }
+
+    [[nodiscard]] float get_min_width() const {
+        return m_min_width;
+    }
 
     [[nodiscard]] float get_margin() const {
         return m_margin;
@@ -48,7 +66,8 @@ public:
 class Label : public Box {
     const std::string_view m_text;
     const gfx::Font& m_font;
-    const int m_fontsize = 20;
+    const gfx::Color m_font_color = gfx::Color::white();
+    const int m_fontsize = 50;
 
 public:
     Label(std::string_view text, gfx::Color color, const gfx::Font& font, float margin=1.0f)
@@ -56,14 +75,15 @@ public:
         , m_text(text)
         , m_font(font)
     {
+        m_fixed_height = true;
+        m_box.height = m_fontsize;
+        m_fixed_width = true;
+        m_box.width = m_font.measure_text(m_text, m_fontsize);
     }
 
     void draw(gfx::Renderer& rd) const override {
-        rd.draw_text(m_box.x, m_box.y, m_fontsize, m_text, m_font, m_color);
-    }
-
-    void calculate_layout() override {
-        m_box.width = m_font.measure_text(m_text, m_fontsize);
+        Box::draw(rd);
+        rd.draw_text(m_box.x, m_box.y, m_fontsize, m_text, m_font, m_font_color);
     }
 
 };
@@ -95,20 +115,35 @@ public:
     { }
 
     void calculate_layout() override {
-        int elem_width = m_box.width / m_children.size();
+        int children_with_flex_width = std::ranges::count_if(m_children, [](auto& child) {
+            return not child->has_fixed_width();
+        });
+
+        int fixed_width = std::accumulate(m_children.begin(), m_children.end(), 0, [](int acc, auto& child) {
+            return child->has_fixed_width()
+            ? acc + child->get_box().width
+            : acc;
+        });
+
+        int available_width = m_box.width - fixed_width;
+        int flex_elem_width = available_width / children_with_flex_width;
 
         int x = 0;
         for (auto& child : m_children) {
             auto& box = child->get_box();
-            float margin = child->get_margin();
 
-            box.height = m_box.height - margin * 2.0f;
-            box.width = elem_width - margin * 2.0f;
-            box.y = m_box.y + margin;
-            box.x = m_box.x + x + margin;
-            x += elem_width;
+            if (not child->has_fixed_height())
+                box.height = m_box.height;
+
+            if (not child->has_fixed_width())
+                box.width = flex_elem_width;
+
+            box.x = m_box.x + x;
+            box.y = m_box.y;
 
             child->calculate_layout();
+
+            x += box.width;
         }
     }
 
@@ -133,20 +168,35 @@ public:
 
     void calculate_layout() override {
 
-        int elem_height = m_box.height / m_children.size();
+        int children_with_flex_height = std::ranges::count_if(m_children, [](auto& child) {
+            return not child->has_fixed_height();
+        });
+
+        int fixed_height = std::accumulate(m_children.begin(), m_children.end(), 0, [](int acc, auto& child) {
+            return child->has_fixed_height()
+            ? acc + child->get_box().height
+            : acc;
+        });
+
+        int available_height = m_box.height - fixed_height;
+        int flex_elem_height = available_height / children_with_flex_height;
 
         int y = 0;
         for (auto& child : m_children) {
             auto& box = child->get_box();
-            float margin = child->get_margin();
 
-            box.height = elem_height - margin * 2.0f;
-            box.width = m_box.width - margin * 2.0f;
-            box.x = m_box.x + margin;
-            box.y = m_box.y + y + margin;
-            y += elem_height;
+            if (not child->has_fixed_height())
+                box.height = flex_elem_height;
+
+            if (not child->has_fixed_width())
+                box.width = m_box.width;
+
+            box.x = m_box.x;
+            box.y = m_box.y + y;
 
             child->calculate_layout();
+
+            y += box.height;
         }
     }
 
@@ -241,13 +291,17 @@ int main() {
 
         ui.root(rd, gfx::Color::black(), [&](ui::Ui& ui) {
 
-            ui.horizontal(gfx::Color::gray(), [&] {
-                ui.label("foo", gfx::Color::white(), font);
-                ui.box(gfx::Color::blue());
+            ui.horizontal(gfx::Color::black(), [&] {
+                ui.vertical(gfx::Color::black(), [&] {
+                    ui.label("Hello, World!", gfx::Color::orange(), font);
+                    ui.box(gfx::Color::blue());
+                    ui.label("bar", gfx::Color::lightblue(), font);
+                    ui.box(gfx::Color::red());
+                });
+                ui.box(gfx::Color::green());
+                ui.label("bar", gfx::Color::lightblue(), font);
             });
 
-            // ui.box(gfx::Color::orange());
-            // ui.box(gfx::Color::red());
 
         });
 
