@@ -115,7 +115,7 @@ public:
     { }
 
     void calculate_layout() override {
-        int children_with_flex_width = std::ranges::count_if(m_children, [](auto& child) {
+        int flex_width_count = std::ranges::count_if(m_children, [](auto& child) {
             return not child->has_fixed_width();
         });
 
@@ -126,7 +126,7 @@ public:
         });
 
         int available_width = m_box.width - fixed_width;
-        int flex_elem_width = available_width / children_with_flex_width;
+        int flex_elem_width = available_width / flex_width_count;
 
         int x = 0;
         for (auto& child : m_children) {
@@ -138,8 +138,8 @@ public:
             if (not child->has_fixed_width())
                 box.width = flex_elem_width;
 
-            box.x = m_box.x + x;
             box.y = m_box.y;
+            box.x = m_box.x + x;
 
             child->calculate_layout();
 
@@ -168,7 +168,7 @@ public:
 
     void calculate_layout() override {
 
-        int children_with_flex_height = std::ranges::count_if(m_children, [](auto& child) {
+        int flex_height_count = std::ranges::count_if(m_children, [](auto& child) {
             return not child->has_fixed_height();
         });
 
@@ -179,7 +179,7 @@ public:
         });
 
         int available_height = m_box.height - fixed_height;
-        int flex_elem_height = available_height / children_with_flex_height;
+        int flex_elem_height = available_height / flex_height_count;
 
         int y = 0;
         for (auto& child : m_children) {
