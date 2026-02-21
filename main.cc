@@ -1,5 +1,7 @@
 #include <print>
 #include <vector>
+#include <memory>
+#include <functional>
 #include <stack>
 
 #include <gfx/gfx.h>
@@ -122,48 +124,59 @@ public:
 
 class Ui {
     using Fn = std::function<void()>;
-    std::stack<std::vector<std::unique_ptr<Box>>> m_children;
+
+    // context, used for temporarily storing the child elements in the current
+    // stack frame
+    using Context = std::stack<std::vector<std::unique_ptr<Box>>>;
+    Context& m_context;
 
 public:
-    Ui() = default;
+    explicit Ui(Context& context) : m_context(context) { }
 
     void box(gfx::Color color) {
-        m_children.top().emplace_back(std::make_unique<Box>(color));
+        m_context.top().emplace_back(std::make_unique<Box>(color));
     }
 
     void horizontal(gfx::Color color, Fn fn) {
-        m_children.push({});
+        m_context.push({});
         fn();
-        auto container = std::make_unique<HorizontalContainer>(std::move(m_children.top()), color);
-        m_children.pop();
-        m_children.top().emplace_back(std::move(container));
+        auto container = std::make_unique<HorizontalContainer>(std::move(m_context.top()), color);
+        m_context.pop();
+        m_context.top().emplace_back(std::move(container));
     }
 
     void vertical(gfx::Color color, Fn fn) {
-        m_children.push({});
+        m_context.push({});
         fn();
-        auto container = std::make_unique<VerticalContainer>(std::move(m_children.top()), color);
-        m_children.pop();
-        m_children.top().emplace_back(std::move(container));
-    }
-
-    void root(gfx::Renderer& rd, gfx::Color color, Fn fn) {
-        m_children.push({});
-        vertical(color, fn);
-
-        assert(m_children.size() == 1);
-        auto& root = m_children.top().front();
-        root->get_rect() = rd.get_surface().get_as_rect();
-        system("clear");
-        root->calculate_layout();
-        root->print(0);
-        root->draw(rd);
-
-        m_children.pop();
-        assert(m_children.empty());
+        auto container = std::make_unique<VerticalContainer>(std::move(m_context.top()), color);
+        m_context.pop();
+        m_context.top().emplace_back(std::move(container));
     }
 
 };
+
+class UserInterface {
+    std::stack<std::vector<std::unique_ptr<Box>>> m_context;
+    Ui m_ui { m_context };
+
+public:
+    UserInterface() = default;
+
+    void root(gfx::Renderer& rd, gfx::Color color, std::function<void(Ui&)> fn) {
+        m_context.push({});
+        m_ui.vertical(color, std::bind(fn, m_ui));
+
+        assert(m_context.size() == 1);
+        auto& root = m_context.top().front();
+        root->get_rect() = rd.get_surface().get_as_rect();
+        root->calculate_layout();
+        root->draw(rd);
+
+        m_context.pop();
+        assert(m_context.empty());
+    }
+};
+
 
 } // namespace
 
@@ -173,12 +186,12 @@ int main() {
         .enable_resizing(true);
 
     gfx::Window window(1920, 1080, "ui", flags);
-    Ui ui;
+    UserInterface ui;
 
     window.draw_loop([&](gfx::Renderer& rd) {
         rd.clear_background(gfx::Color::black());
 
-        ui.root(rd, gfx::Color::black(), [&] {
+        ui.root(rd, gfx::Color::black(), [&](Ui& ui) {
 
             ui.horizontal(gfx::Color::black(), [&] {
                 ui.box(gfx::Color::orange());
