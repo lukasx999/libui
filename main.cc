@@ -1,4 +1,6 @@
 #include <print>
+#include <vector>
+#include <stack>
 
 #include <gfx/gfx.h>
 
@@ -11,6 +13,7 @@ protected:
 
 public:
     Box(gfx::Color color) : m_color(color) { }
+    virtual ~Box() = default;
 
     [[nodiscard]] gfx::Rect& get_rect() {
         return m_rect;
@@ -20,7 +23,7 @@ public:
         rd.draw_rectangle(m_rect, m_color);
     }
 
-    virtual void calculate_children_layouts() { }
+    virtual void calculate_layout() { }
 
 };
 
@@ -29,9 +32,9 @@ protected:
     std::vector<Box*> m_children;
 
 public:
-    Container(std::initializer_list<Box*> children, gfx::Color color)
+    Container(std::vector<Box*> children, gfx::Color color)
         : Box(color)
-        , m_children(children)
+        , m_children(std::move(children))
     { }
 
     void draw(gfx::Renderer& rd) const override {
@@ -45,11 +48,11 @@ public:
 
 class HorizontalContainer : public Container {
 public:
-    HorizontalContainer(std::initializer_list<Box*> children, gfx::Color color)
-    : Container(children, color)
+    HorizontalContainer(std::vector<Box*> children, gfx::Color color)
+    : Container(std::move(children), color)
     { }
 
-    void calculate_children_layouts() override {
+    void calculate_layout() override {
         int elem_width = m_rect.width / m_children.size();
 
         int x = 0;
@@ -61,7 +64,7 @@ public:
             rect.x = x;
             x += elem_width;
 
-            child->calculate_children_layouts();
+            child->calculate_layout();
         }
     }
 
@@ -69,11 +72,11 @@ public:
 
 class VerticalContainer : public Container {
 public:
-    VerticalContainer(std::initializer_list<Box*> children, gfx::Color color)
-    : Container(children, color)
+    VerticalContainer(std::vector<Box*> children, gfx::Color color)
+    : Container(std::move(children), color)
     { }
 
-    void calculate_children_layouts() override {
+    void calculate_layout() override {
         int elem_height = m_rect.height / m_children.size();
 
         int y = 0;
@@ -85,8 +88,50 @@ public:
             rect.y = y;
             y += elem_height;
 
-            child->calculate_children_layouts();
+            child->calculate_layout();
         }
+    }
+
+};
+
+class Ui {
+    using Fn = std::function<void()>;
+    std::stack<std::vector<Box*>> m_children;
+
+public:
+    Ui() = default;
+
+    void box(gfx::Color color) {
+        m_children.top().emplace_back(new Box(color));
+    }
+
+    void horizontal(gfx::Color color, Fn fn) {
+        m_children.push({});
+        fn();
+        auto container = new HorizontalContainer(m_children.top(), color);
+        m_children.pop();
+        m_children.top().emplace_back(container);
+    }
+
+    void vertical(gfx::Color color, Fn fn) {
+        m_children.push({});
+        fn();
+        auto container = new VerticalContainer(m_children.top(), color);
+        m_children.pop();
+
+        m_children.top().emplace_back(container);
+    }
+
+    void root(gfx::Renderer& rd, gfx::Color color, Fn fn) {
+        m_children.push({});
+        vertical(color, fn);
+
+        auto item = m_children.top().front();
+        item->get_rect() = rd.get_surface().get_as_rect();
+        item->calculate_layout();
+        item->draw(rd);
+
+        m_children.pop();
     }
 
 };
@@ -95,21 +140,37 @@ public:
 
 int main() {
 
-    gfx::Window window(1920, 1080, "ui");
+    auto flags = gfx::WindowFlags()
+        .enable_resizing(true);
 
-    Box a(gfx::Color::blue());
-    Box b(gfx::Color::orange());
-    Box c(gfx::Color::red());
-    HorizontalContainer container({ &a, &b, &c }, gfx::Color::black());
-    Box foo(gfx::Color::green());
-    VerticalContainer root({ &container, &foo }, gfx::Color::gray());
-    root.get_rect() = window.get_as_rect();
-    root.calculate_children_layouts();
+    gfx::Window window(1920, 1080, "ui", flags);
+
+    Ui ui;
 
     window.draw_loop([&](gfx::Renderer& rd) {
         rd.clear_background(gfx::Color::black());
 
-        root.draw(rd);
+        ui.root(rd, gfx::Color::black(), [&] {
+
+            ui.box(gfx::Color::white());
+            ui.box(gfx::Color::green());
+            // ui.vertical(gfx::Color::gray(), [&] {
+            //
+            //     ui.horizontal(gfx::Color::black(), [&] {
+            //         ui.box(gfx::Color::white());
+            //         ui.box(gfx::Color::green());
+            //     });
+            //
+            //     ui.box(gfx::Color::blue());
+            //
+            //     ui.horizontal(gfx::Color::black(), [&] {
+            //         ui.box(gfx::Color::orange());
+            //         ui.box(gfx::Color::red());
+            //         ui.box(gfx::Color::lightblue());
+            //     });
+            //
+            // });
+        });
 
         if (window.get_key_state(gfx::Key::Escape).pressed())
             window.close();
