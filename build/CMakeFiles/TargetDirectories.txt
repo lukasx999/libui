@@ -1,3 +1,0 @@
-/home/lukas/code/repos/libui/build/CMakeFiles/ui.dir
-/home/lukas/code/repos/libui/build/CMakeFiles/edit_cache.dir
-/home/lukas/code/repos/libui/build/CMakeFiles/rebuild_cache.dir
