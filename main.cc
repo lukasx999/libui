@@ -12,7 +12,7 @@ protected:
     gfx::Rect m_rect;
 
 public:
-    Box(gfx::Color color) : m_color(color) { }
+    explicit Box(gfx::Color color) : m_color(color) { }
     virtual ~Box() = default;
 
     [[nodiscard]] gfx::Rect& get_rect() {
@@ -35,10 +35,10 @@ public:
 
 class Container : public Box {
 protected:
-    std::vector<Box*> m_children;
+    std::vector<std::unique_ptr<Box>> m_children;
 
 public:
-    Container(std::vector<Box*> children, gfx::Color color)
+    Container(std::vector<std::unique_ptr<Box>> children, gfx::Color color)
         : Box(color)
         , m_children(std::move(children))
     { }
@@ -54,7 +54,7 @@ public:
 
 class HorizontalContainer : public Container {
 public:
-    HorizontalContainer(std::vector<Box*> children, gfx::Color color)
+    HorizontalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color)
     : Container(std::move(children), color)
     { }
 
@@ -88,7 +88,7 @@ public:
 
 class VerticalContainer : public Container {
 public:
-    VerticalContainer(std::vector<Box*> children, gfx::Color color)
+    VerticalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color)
     : Container(std::move(children), color)
     { }
 
@@ -122,37 +122,37 @@ public:
 
 class Ui {
     using Fn = std::function<void()>;
-    std::stack<std::vector<Box*>> m_children;
+    std::stack<std::vector<std::unique_ptr<Box>>> m_children;
 
 public:
     Ui() = default;
 
     void box(gfx::Color color) {
-        m_children.top().emplace_back(new Box(color));
+        m_children.top().emplace_back(std::make_unique<Box>(color));
     }
 
     void horizontal(gfx::Color color, Fn fn) {
         m_children.push({});
         fn();
-        auto children = m_children.top();
+        auto container = std::make_unique<HorizontalContainer>(std::move(m_children.top()), color);
         m_children.pop();
-        m_children.top().emplace_back(new HorizontalContainer(children, color));
+        m_children.top().emplace_back(std::move(container));
     }
 
     void vertical(gfx::Color color, Fn fn) {
         m_children.push({});
         fn();
-        auto children = m_children.top();
+        auto container = std::make_unique<VerticalContainer>(std::move(m_children.top()), color);
         m_children.pop();
-        m_children.top().emplace_back(new VerticalContainer(children, color));
+        m_children.top().emplace_back(std::move(container));
     }
 
-    void ui(gfx::Renderer& rd, gfx::Color color, Fn fn) {
+    void root(gfx::Renderer& rd, gfx::Color color, Fn fn) {
         m_children.push({});
         vertical(color, fn);
 
         assert(m_children.size() == 1);
-        auto root = m_children.top().front();
+        auto& root = m_children.top().front();
         root->get_rect() = rd.get_surface().get_as_rect();
         system("clear");
         root->calculate_layout();
@@ -173,13 +173,12 @@ int main() {
         .enable_resizing(true);
 
     gfx::Window window(1920, 1080, "ui", flags);
-
     Ui ui;
 
     window.draw_loop([&](gfx::Renderer& rd) {
         rd.clear_background(gfx::Color::black());
 
-        ui.ui(rd, gfx::Color::black(), [&] {
+        ui.root(rd, gfx::Color::black(), [&] {
 
             ui.horizontal(gfx::Color::black(), [&] {
                 ui.box(gfx::Color::orange());
