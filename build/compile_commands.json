@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/lukas/code/repos/libui/build",
+  "command": "/usr/bin/c++ -std=gnu++23 -fdiagnostics-color=always -Wall -Wextra -O3 -ggdb -o CMakeFiles/ui.dir/main.cc.o -c /home/lukas/code/repos/libui/main.cc",
+  "file": "/home/lukas/code/repos/libui/main.cc",
+  "output": "/home/lukas/code/repos/libui/build/CMakeFiles/ui.dir/main.cc.o"
+}
+]
