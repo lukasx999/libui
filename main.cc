@@ -56,11 +56,14 @@ public:
         , m_text(text)
         , m_font(font)
     {
-        m_box.width = m_font.measure_text(m_text, m_fontsize);
     }
 
-    virtual void draw(gfx::Renderer& rd) const {
+    void draw(gfx::Renderer& rd) const override {
         rd.draw_text(m_box.x, m_box.y, m_fontsize, m_text, m_font, m_color);
+    }
+
+    void calculate_layout() override {
+        m_box.width = m_font.measure_text(m_text, m_fontsize);
     }
 
 };
