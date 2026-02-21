@@ -45,6 +45,26 @@ public:
 
 };
 
+class Label : public Box {
+    const std::string_view m_text;
+    const gfx::Font& m_font;
+    const int m_fontsize = 20;
+
+public:
+    Label(std::string_view text, gfx::Color color, const gfx::Font& font, float margin=1.0f)
+        : Box(color, margin)
+        , m_text(text)
+        , m_font(font)
+    {
+        m_box.width = m_font.measure_text(m_text, m_fontsize);
+    }
+
+    virtual void draw(gfx::Renderer& rd) const {
+        rd.draw_text(m_box.x, m_box.y, m_fontsize, m_text, m_font, m_color);
+    }
+
+};
+
 class Container : public Box {
 protected:
     std::vector<std::unique_ptr<Box>> m_children;
@@ -149,10 +169,16 @@ class Ui {
     Context& m_context;
 
 public:
-    explicit Ui(Context& context) : m_context(context) { }
+    explicit Ui(Context& context)
+        : m_context(context)
+    { }
 
     void box(gfx::Color color, float margin=0.0f) {
         m_context.top().emplace_back(std::make_unique<Box>(color, margin));
+    }
+
+    void label(std::string_view text, gfx::Color color, const gfx::Font& font) {
+        m_context.top().emplace_back(std::make_unique<Label>(text, color, font));
     }
 
     void horizontal(gfx::Color color, Fn fn) {
@@ -204,6 +230,7 @@ int main() {
         .enable_resizing(true);
 
     gfx::Window window(1920, 1080, "ui", flags);
+    auto font = window.load_font("/usr/share/fonts/TTF/FiraCodeNerdFont-Regular.ttf");
     ui::UserInterface ui;
 
     window.draw_loop([&](gfx::Renderer& rd) {
@@ -212,12 +239,12 @@ int main() {
         ui.root(rd, gfx::Color::black(), [&](ui::Ui& ui) {
 
             ui.horizontal(gfx::Color::gray(), [&] {
-                ui.box(gfx::Color::white());
+                ui.label("foo", gfx::Color::white(), font);
                 ui.box(gfx::Color::blue());
             });
 
-            ui.box(gfx::Color::orange());
-            ui.box(gfx::Color::red());
+            // ui.box(gfx::Color::orange());
+            // ui.box(gfx::Color::red());
 
         });
 
