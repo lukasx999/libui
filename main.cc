@@ -134,8 +134,12 @@ public:
             if (not child->has_fixed_height())
                 box.height = m_box.height;
 
-            if (not child->has_fixed_width())
-                box.width = flex_elem_width;
+            if (not child->has_fixed_width()) {
+                if (child->get_min_width() > 0.0f)
+                    box.width = child->get_min_width();
+                else
+                    box.width = flex_elem_width;
+            }
 
             box.y = m_box.y;
             box.x = m_box.x + x;
