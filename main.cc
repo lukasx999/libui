@@ -16,7 +16,7 @@ protected:
     gfx::Rect m_box;
 
 public:
-    Box(gfx::Color color, float margin=1.0f)
+    Box(gfx::Color color, float margin=0.0f)
         : m_color(color)
         , m_margin(margin)
     { }
@@ -50,7 +50,7 @@ protected:
     std::vector<std::unique_ptr<Box>> m_children;
 
 public:
-    Container(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=1.0f)
+    Container(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=0.0f)
         : Box(color, margin)
         , m_children(std::move(children))
     { }
@@ -67,7 +67,7 @@ public:
 
 class HorizontalContainer : public Container {
 public:
-    HorizontalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=1.0f)
+    HorizontalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=0.0f)
     : Container(std::move(children), color, margin)
     { }
 
@@ -79,8 +79,8 @@ public:
             auto& box = child->get_box();
             float margin = child->get_margin();
 
-            box.height = m_box.height - margin*2.0f;
-            box.width = elem_width - margin*2.0f;
+            box.height = m_box.height - margin * 2.0f;
+            box.width = elem_width - margin * 2.0f;
             box.y = m_box.y + margin;
             box.x = m_box.x + x + margin;
             x += elem_width;
@@ -104,11 +104,12 @@ public:
 
 class VerticalContainer : public Container {
 public:
-    VerticalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=1.0f)
+    VerticalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=0.0f)
     : Container(std::move(children), color, margin)
     { }
 
     void calculate_layout() override {
+
         int elem_height = m_box.height / m_children.size();
 
         int y = 0;
@@ -116,8 +117,8 @@ public:
             auto& box = child->get_box();
             float margin = child->get_margin();
 
-            box.height = elem_height - margin*2.0f;
-            box.width = m_box.width - margin*2.0f;
+            box.height = elem_height - margin * 2.0f;
+            box.width = m_box.width - margin * 2.0f;
             box.x = m_box.x + margin;
             box.y = m_box.y + y + margin;
             y += elem_height;
@@ -150,7 +151,7 @@ class Ui {
 public:
     explicit Ui(Context& context) : m_context(context) { }
 
-    void box(gfx::Color color, float margin=1.0f) {
+    void box(gfx::Color color, float margin=0.0f) {
         m_context.top().emplace_back(std::make_unique<Box>(color, margin));
     }
 
@@ -211,12 +212,12 @@ int main() {
         ui.root(rd, gfx::Color::black(), [&](ui::Ui& ui) {
 
             ui.horizontal(gfx::Color::gray(), [&] {
-                ui.box(gfx::Color::white(), 30);
-                ui.box(gfx::Color::blue(), 30);
+                ui.box(gfx::Color::white());
+                ui.box(gfx::Color::blue());
             });
 
-            ui.box(gfx::Color::orange(), 30);
-            ui.box(gfx::Color::red(), 30);
+            ui.box(gfx::Color::orange());
+            ui.box(gfx::Color::red());
 
         });
 
