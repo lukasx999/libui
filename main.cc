@@ -25,6 +25,12 @@ public:
 
     virtual void calculate_layout() { }
 
+    virtual void print(int spacing) {
+        for (int i = 0; i < spacing; ++i)
+            std::print(" ");
+        std::println("Box {}", m_rect);
+    }
+
 };
 
 class Container : public Box {
@@ -60,12 +66,22 @@ public:
             auto& rect = child->get_rect();
             rect.height = m_rect.height;
             rect.width = elem_width;
-            rect.y = 0;
-            rect.x = x;
+            rect.y = m_rect.y;
+            rect.x = m_rect.x + x;
             x += elem_width;
 
             child->calculate_layout();
         }
+    }
+
+    void print(int spacing) override {
+        for (int i = 0; i < spacing; ++i)
+            std::print(" ");
+
+        std::println("Horizontal {}", m_rect);
+
+        for (auto& child : m_children)
+            child->print(spacing+1);
     }
 
 };
@@ -84,12 +100,22 @@ public:
             auto& rect = child->get_rect();
             rect.height = elem_height;
             rect.width = m_rect.width;
-            rect.x = 0;
-            rect.y = y;
+            rect.x = m_rect.x;
+            rect.y = m_rect.y + y;
             y += elem_height;
 
             child->calculate_layout();
         }
+    }
+
+    void print(int spacing) override {
+        for (int i = 0; i < spacing; ++i)
+            std::print(" ");
+
+        std::println("Vertical {}", m_rect);
+
+        for (auto& child : m_children)
+            child->print(spacing+1);
     }
 
 };
@@ -108,30 +134,33 @@ public:
     void horizontal(gfx::Color color, Fn fn) {
         m_children.push({});
         fn();
-        auto container = new HorizontalContainer(m_children.top(), color);
+        auto children = m_children.top();
         m_children.pop();
-        m_children.top().emplace_back(container);
+        m_children.top().emplace_back(new HorizontalContainer(children, color));
     }
 
     void vertical(gfx::Color color, Fn fn) {
         m_children.push({});
         fn();
-        auto container = new VerticalContainer(m_children.top(), color);
+        auto children = m_children.top();
         m_children.pop();
-
-        m_children.top().emplace_back(container);
+        m_children.top().emplace_back(new VerticalContainer(children, color));
     }
 
-    void root(gfx::Renderer& rd, gfx::Color color, Fn fn) {
+    void ui(gfx::Renderer& rd, gfx::Color color, Fn fn) {
         m_children.push({});
         vertical(color, fn);
 
-        auto item = m_children.top().front();
-        item->get_rect() = rd.get_surface().get_as_rect();
-        item->calculate_layout();
-        item->draw(rd);
+        assert(m_children.size() == 1);
+        auto root = m_children.top().front();
+        root->get_rect() = rd.get_surface().get_as_rect();
+        system("clear");
+        root->calculate_layout();
+        root->print(0);
+        root->draw(rd);
 
         m_children.pop();
+        assert(m_children.empty());
     }
 
 };
@@ -150,26 +179,20 @@ int main() {
     window.draw_loop([&](gfx::Renderer& rd) {
         rd.clear_background(gfx::Color::black());
 
-        ui.root(rd, gfx::Color::black(), [&] {
+        ui.ui(rd, gfx::Color::black(), [&] {
 
-            ui.box(gfx::Color::white());
-            ui.box(gfx::Color::green());
-            // ui.vertical(gfx::Color::gray(), [&] {
-            //
-            //     ui.horizontal(gfx::Color::black(), [&] {
-            //         ui.box(gfx::Color::white());
-            //         ui.box(gfx::Color::green());
-            //     });
-            //
-            //     ui.box(gfx::Color::blue());
-            //
-            //     ui.horizontal(gfx::Color::black(), [&] {
-            //         ui.box(gfx::Color::orange());
-            //         ui.box(gfx::Color::red());
-            //         ui.box(gfx::Color::lightblue());
-            //     });
-            //
-            // });
+            ui.horizontal(gfx::Color::black(), [&] {
+                ui.box(gfx::Color::orange());
+                ui.box(gfx::Color::red());
+            });
+
+            ui.box(gfx::Color::blue());
+
+            ui.horizontal(gfx::Color::black(), [&] {
+                ui.box(gfx::Color::orange());
+                ui.box(gfx::Color::red());
+            });
+
         });
 
         if (window.get_key_state(gfx::Key::Escape).pressed())
