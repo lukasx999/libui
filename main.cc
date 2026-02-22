@@ -118,25 +118,34 @@ public:
             return not child->has_fixed_width();
         });
 
-        int fixed_width = std::accumulate(m_children.begin(), m_children.end(), 0, [](int acc, auto& child) {
+        float fixed_width = std::accumulate(m_children.begin(), m_children.end(), 0.0f, [](int acc, auto& child) {
             if (child->has_fixed_width())
                 acc += child->get_box().width;
 
             return acc;
         });
 
-        int available_width = m_box.width - fixed_width;
-        int flex_elem_width = available_width / flex_width_count;
+        float available_width = m_box.width - fixed_width;
 
-        int x = 0;
+        float x = 0;
         for (auto& child : m_children) {
+
             auto& box = child->get_box();
+            float min_width = child->get_min_width();
+            float flex_elem_width = available_width / flex_width_count;
 
             if (not child->has_fixed_height())
                 box.height = m_box.height;
 
-            if (not child->has_fixed_width())
+            if (flex_elem_width < min_width) {
+                box.width = min_width;
+
+                available_width -= min_width;
+                flex_width_count--;
+
+            } else if (not child->has_fixed_width()) {
                 box.width = flex_elem_width;
+            }
 
             box.y = m_box.y;
             box.x = m_box.x + x;
@@ -293,14 +302,16 @@ int main() {
         ui.root(rd, gfx::Color::black(), [&](ui::Ui& ui) {
 
             ui.horizontal(gfx::Color::black(), [&] {
-                ui.vertical(gfx::Color::black(), [&] {
-                    ui.label("Hello, World!", gfx::Color::orange(), font);
-                    ui.box(gfx::Color::blue());
-                    ui.label("bar", gfx::Color::lightblue(), font);
-                    ui.box(gfx::Color::red());
-                });
+                ui.label("AAAAAAAAAA", gfx::Color::lightblue(), font);
                 ui.box(gfx::Color::green());
-                ui.label("ui library", gfx::Color::lightblue(), font);
+                ui.label("HelloWorld", gfx::Color::red(), font);
+                // ui.vertical(gfx::Color::black(), [&] {
+                //     ui.label("Hello, World!", gfx::Color::orange(), font);
+                //     ui.box(gfx::Color::blue());
+                //     ui.label("bar", gfx::Color::lightblue(), font);
+                //     ui.box(gfx::Color::red());
+                // });
+                ui.box(gfx::Color::white());
             });
 
 
