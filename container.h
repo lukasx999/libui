@@ -13,29 +13,31 @@ public:
         : Box(color, margin)
         , m_children(std::move(children))
         , m_direction(direction)
-    { }
+    {
+
+        switch (m_direction) {
+            using enum Direction;
+
+            case Horizontal: {
+                m_moving_axis = &gfx::Rect::x;
+                m_static_axis = &gfx::Rect::y;
+                m_moving_side = &gfx::Rect::width;
+                m_static_side = &gfx::Rect::height;
+            } break;
+
+            case Vertical: {
+                m_moving_axis = &gfx::Rect::y;
+                m_static_axis = &gfx::Rect::x;
+                m_moving_side = &gfx::Rect::height;
+                m_static_side = &gfx::Rect::width;
+            } break;
+        }
+    }
 
     void compute_layout() override {
 
         if (m_children.empty()) return;
 
-        auto [moving_axis, static_axis, moving_side, static_side] = [&] -> std::array<float gfx::Rect::*, 4> {
-            switch (m_direction) {
-                using enum Direction;
-                case Horizontal: return {
-                    &gfx::Rect::x,
-                    &gfx::Rect::y,
-                    &gfx::Rect::width,
-                    &gfx::Rect::height
-                };
-                case Vertical: return {
-                    &gfx::Rect::y,
-                    &gfx::Rect::x,
-                    &gfx::Rect::height,
-                    &gfx::Rect::width
-                };
-            }
-        }();
 
         // x/y-positions get passed down the tree, as individual elements dont know
         // their absolute position, and have to rely on their parent setting the position for them.
@@ -49,9 +51,9 @@ public:
             gfx::Rect& box = child->get_box();
             float margin = child->get_margin();
 
-            box.*moving_axis = axis;
-            box.*static_axis = m_box.*static_axis + margin;
-            axis += box.*moving_side + margin;
+            box.*m_moving_axis = axis;
+            box.*m_static_axis = m_box.*m_static_axis + margin;
+            axis += box.*m_moving_side + margin;
 
             child->compute_layout();
         }
@@ -59,17 +61,7 @@ public:
         // we can only calculate our own dimensions AFTER the child layouts
         // have been computed.
 
-        auto largest_static_side = std::ranges::max_element(m_children, [&](std::unique_ptr<Box>& a, decltype(a) b) {
-            return a->get_box().*static_side + a->get_margin() < b->get_box().*static_side + b->get_margin();
-        });
-
-        m_box.*static_side = (*largest_static_side)->get_box().*static_side + (*largest_static_side)->get_margin()*2.0f;
-
-        assert(largest_static_side != m_children.end());
-
-        m_box.*moving_side = std::ranges::fold_left(m_children, 0.0f, [&](float acc, std::unique_ptr<Box>& child) {
-            return acc + child->get_box().*moving_side + child->get_margin()*2.0f;
-        });
+        compute_dimensions();
 
     }
 
@@ -110,6 +102,26 @@ public:
 protected:
     std::vector<std::unique_ptr<Box>> m_children;
     const Direction m_direction;
+
+    float gfx::Rect::* m_moving_axis;
+    float gfx::Rect::* m_static_axis;
+    float gfx::Rect::* m_moving_side;
+    float gfx::Rect::* m_static_side;
+
+    void compute_dimensions() {
+
+        auto largest_static_side = std::ranges::max_element(m_children, [&](std::unique_ptr<Box>& a, decltype(a) b) {
+            return a->get_box().*m_static_side + a->get_margin() < b->get_box().*m_static_side + b->get_margin();
+        });
+
+        m_box.*m_static_side = (*largest_static_side)->get_box().*m_static_side + (*largest_static_side)->get_margin()*2.0f;
+
+        assert(largest_static_side != m_children.end());
+
+        m_box.*m_moving_side = std::ranges::fold_left(m_children, 0.0f, [&](float acc, std::unique_ptr<Box>& child) {
+            return acc + child->get_box().*m_moving_side + child->get_margin()*2.0f;
+        });
+    }
 
 };
 
