@@ -13,11 +13,6 @@
 namespace ui {
 
 class Box {
-protected:
-    const gfx::Color m_color;
-    const float m_margin;
-    gfx::Rect m_box;
-
 public:
     Box(gfx::Color color, float margin=0.0f)
         : m_color(color)
@@ -38,8 +33,7 @@ public:
         rd.draw_rectangle(m_box, m_color);
     }
 
-    // TODO: maybe have an xy parameter?
-    virtual void calculate_layout() { }
+    virtual void compute_layout() { }
 
     virtual void print(int spacing) {
         for (int i = 0; i < spacing; ++i)
@@ -47,16 +41,16 @@ public:
         std::println("Box {}", m_box);
     }
 
+protected:
+    const gfx::Color m_color;
+    const float m_margin;
+    gfx::Rect m_box;
+
 };
 
 class Label : public Box {
-    const std::string_view m_text;
-    const gfx::Font& m_font;
-    const gfx::Color m_font_color = gfx::Color::white();
-    const int m_fontsize = 50;
-
 public:
-    Label(std::string_view text, gfx::Color color, const gfx::Font& font, float margin=1.0f)
+    Label(std::string_view text, gfx::Color color, const gfx::Font& font, float margin=0.0f)
         : Box(color, margin)
         , m_text(text)
         , m_font(font)
@@ -76,26 +70,25 @@ public:
         std::println("Label {} ({})", m_box, m_text);
     }
 
+private:
+    const std::string_view m_text;
+    const gfx::Font& m_font;
+    const gfx::Color m_font_color = gfx::Color::white();
+    const int m_fontsize = 50;
+
 };
 
 class Container : public Box {
-protected:
-    std::vector<std::unique_ptr<Box>> m_children;
-
 public:
     enum class Direction { Horizontal, Vertical };
 
-private:
-    const Direction m_direction;
-
-public:
     Container(std::vector<std::unique_ptr<Box>> children, Direction direction, gfx::Color color, float margin=0.0f)
         : Box(color, margin)
         , m_children(std::move(children))
         , m_direction(direction)
     { }
 
-    void calculate_layout() override {
+    void compute_layout() override {
 
         auto [moving_axis, static_axis, moving_side, static_side] = [&] -> std::array<float gfx::Rect::*, 4> {
             switch (m_direction) {
@@ -138,7 +131,7 @@ public:
             box.*moving_axis = moving;
             box.*static_axis = m_box.*static_axis;
 
-            child->calculate_layout();
+            child->compute_layout();
             // the child will set its width/height on its own
             moving += box.*moving_side;
         }
@@ -162,20 +155,18 @@ public:
         }
     }
 
+protected:
+    std::vector<std::unique_ptr<Box>> m_children;
+    const Direction m_direction;
+
 };
 
 class Ui {
+    using Context = std::stack<std::vector<std::unique_ptr<Box>>>;
     using Fn = std::function<void()>;
 
-    // context, used for temporarily storing the child elements in the current
-    // stack frame
-    using Context = std::stack<std::vector<std::unique_ptr<Box>>>;
-    Context& m_context;
-
 public:
-    explicit Ui(Context& context)
-        : m_context(context)
-    { }
+    explicit Ui(Context& context) : m_context(context) { }
 
     void box(gfx::Color color, float margin=0.0f) {
         m_context.top().emplace_back(std::make_unique<Box>(color, margin));
@@ -201,6 +192,10 @@ public:
         m_context.top().emplace_back(std::move(container));
     }
 
+private:
+    // context, used for temporarily storing the child elements in the current element context
+    Context& m_context;
+
 };
 
 class UserInterface {
@@ -216,8 +211,9 @@ public:
 
         assert(m_context.size() == 1);
         auto& root = m_context.top().front();
-        root->calculate_layout();
+        root->compute_layout();
         root->draw(rd);
+
         system("clear");
         root->print(0);
 
