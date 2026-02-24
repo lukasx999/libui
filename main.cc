@@ -97,7 +97,7 @@ int main() {
             ui.vertical(gfx::Color::lightblue(), [&] {
                 ui.label("foo", gfx::Color::blue(), font, 10.0f);
                 ui.horizontal(gfx::Color::grey(), [&] {
-                    ui.label("a", gfx::Color::blue(), font, 10.0f);
+                    ui.label("a", gfx::Color::blue(), font);
                     ui.label("b", gfx::Color::blue(), font);
                 });
             });
