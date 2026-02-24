@@ -12,8 +12,6 @@
 #include "container.h"
 #include "label.h"
 
-#define DBG(value) std::println("{}: {}", #value, value);
-
 namespace ui {
 
 class Ui {
