@@ -120,6 +120,7 @@ public:
             box.x = x;
             box.y = m_box.y;
             child->calculate_layout();
+            // the child will set its width/height on its own
             x += box.width;
         }
     }
