@@ -17,9 +17,6 @@ protected:
     const gfx::Color m_color;
     const float m_margin;
     gfx::Rect m_box;
-    float m_min_width = 0.0f;
-    bool m_fixed_height = false;
-    bool m_fixed_width = false;
 
 public:
     Box(gfx::Color color, float margin=0.0f)
@@ -28,18 +25,6 @@ public:
     { }
 
     virtual ~Box() = default;
-
-    [[nodiscard]] bool has_fixed_height() const {
-        return m_fixed_height;
-    }
-
-    [[nodiscard]] bool has_fixed_width() const {
-        return m_fixed_width;
-    }
-
-    [[nodiscard]] float get_min_width() const {
-        return m_min_width;
-    }
 
     [[nodiscard]] float get_margin() const {
         return m_margin;
@@ -75,9 +60,8 @@ public:
         , m_text(text)
         , m_font(font)
     {
-        m_fixed_height = true;
         m_box.height = m_fontsize;
-        m_min_width = m_font.measure_text(m_text, m_fontsize);
+        m_box.width = m_font.measure_text(m_text, m_fontsize);
     }
 
     void draw(gfx::Renderer& rd) const override {
@@ -114,44 +98,28 @@ public:
     { }
 
     void calculate_layout() override {
-        int flex_width_count = std::ranges::count_if(m_children, [](auto& child) {
-            return not child->has_fixed_width();
+
+        if (m_children.empty()) return;
+
+        auto tallest = std::ranges::max_element(m_children, [](std::unique_ptr<Box>& a, decltype(a) b) {
+            return a->get_box().height < b->get_box().height;
         });
 
-        float fixed_width = std::accumulate(m_children.begin(), m_children.end(), 0.0f, [](int acc, auto& child) {
-            if (child->has_fixed_width())
-                acc += child->get_box().width;
+        m_box.height = (*tallest)->get_box().height;
 
-            return acc;
+        assert(tallest != m_children.end());
+
+        m_box.width = std::ranges::fold_left(m_children, 0.0f, [](float acc, std::unique_ptr<Box>& child) {
+            return acc + child->get_box().width;
         });
-
-        float available_width = m_box.width - fixed_width;
 
         float x = 0;
         for (auto& child : m_children) {
-
-            auto& box = child->get_box();
-            float min_width = child->get_min_width();
-            float flex_elem_width = available_width / flex_width_count;
-
-            if (not child->has_fixed_height())
-                box.height = m_box.height;
-
-            if (flex_elem_width < min_width) {
-                box.width = min_width;
-
-                available_width -= min_width;
-                flex_width_count--;
-
-            } else if (not child->has_fixed_width()) {
-                box.width = flex_elem_width;
-            }
-
+            gfx::Rect& box = child->get_box();
+            // set the childs xy-position so it knows where to position its own children
+            box.x = x;
             box.y = m_box.y;
-            box.x = m_box.x + x;
-
             child->calculate_layout();
-
             x += box.width;
         }
     }
@@ -175,37 +143,29 @@ public:
     : Container(std::move(children), color, margin)
     { }
 
+    // TODO: maybe have an xy parameter?
     void calculate_layout() override {
 
-        int flex_height_count = std::ranges::count_if(m_children, [](auto& child) {
-            return not child->has_fixed_height();
+        if (m_children.empty()) return;
+
+        auto widest = std::ranges::max_element(m_children, [](std::unique_ptr<Box>& a, decltype(a) b) {
+            return a->get_box().width < b->get_box().width;
         });
 
-        int fixed_height = std::accumulate(m_children.begin(), m_children.end(), 0, [](int acc, auto& child) {
-            if (child->has_fixed_height())
-                acc += child->get_box().height;
+        m_box.width = (*widest)->get_box().width;
 
-            return acc;
+        assert(widest != m_children.end());
+
+        m_box.height = std::ranges::fold_left(m_children, 0.0f, [](float acc, std::unique_ptr<Box>& child) {
+            return acc + child->get_box().height;
         });
 
-        int available_height = m_box.height - fixed_height;
-        int flex_elem_height = available_height / flex_height_count;
-
-        int y = 0;
+        int y = m_box.y;
         for (auto& child : m_children) {
-            auto& box = child->get_box();
-
-            if (not child->has_fixed_height())
-                box.height = flex_elem_height;
-
-            if (not child->has_fixed_width())
-                box.width = m_box.width;
-
+            gfx::Rect& box = child->get_box();
+            box.y = y;
             box.x = m_box.x;
-            box.y = m_box.y + y;
-
             child->calculate_layout();
-
             y += box.height;
         }
     }
@@ -275,9 +235,10 @@ public:
 
         assert(m_context.size() == 1);
         auto& root = m_context.top().front();
-        root->get_box() = rd.get_surface().get_as_rect();
         root->calculate_layout();
         root->draw(rd);
+        system("clear");
+        root->print(0);
 
         m_context.pop();
         assert(m_context.empty());
@@ -301,19 +262,16 @@ int main() {
 
         ui.root(rd, gfx::Color::black(), [&](ui::Ui& ui) {
 
-            ui.horizontal(gfx::Color::black(), [&] {
-                ui.label("AAAAAAAAAA", gfx::Color::lightblue(), font);
-                ui.box(gfx::Color::green());
-                ui.label("HelloWorld", gfx::Color::red(), font);
-                // ui.vertical(gfx::Color::black(), [&] {
-                //     ui.label("Hello, World!", gfx::Color::orange(), font);
-                //     ui.box(gfx::Color::blue());
-                //     ui.label("bar", gfx::Color::lightblue(), font);
-                //     ui.box(gfx::Color::red());
-                // });
-                ui.box(gfx::Color::white());
+            ui.horizontal(gfx::Color::grey(), [&] {
+                ui.vertical(gfx::Color::lightblue(), [&] {
+                    ui.label("foo", gfx::Color::blue(), font);
+                    ui.label("barrr", gfx::Color::blue(), font);
+                });
+                ui.vertical(gfx::Color::orange(), [&] {
+                    ui.label("BAZ", gfx::Color::red(), font);
+                    ui.label("quuux", gfx::Color::red(), font);
+                });
             });
-
 
         });
 
