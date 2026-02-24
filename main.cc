@@ -38,6 +38,7 @@ public:
         rd.draw_rectangle(m_box, m_color);
     }
 
+    // TODO: maybe have an xy parameter?
     virtual void calculate_layout() { }
 
     virtual void print(int spacing) {
@@ -69,6 +70,12 @@ public:
         rd.draw_text(m_box.x, m_box.y, m_fontsize, m_text, m_font, m_font_color);
     }
 
+    void print(int spacing) override {
+        for (int i = 0; i < spacing; ++i)
+            std::print(" ");
+        std::println("Label {} ({})", m_box, m_text);
+    }
+
 };
 
 class Container : public Box {
@@ -76,10 +83,66 @@ protected:
     std::vector<std::unique_ptr<Box>> m_children;
 
 public:
-    Container(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=0.0f)
+    enum class Direction { Horizontal, Vertical };
+
+private:
+    const Direction m_direction;
+
+public:
+    Container(std::vector<std::unique_ptr<Box>> children, Direction direction, gfx::Color color, float margin=0.0f)
         : Box(color, margin)
         , m_children(std::move(children))
+        , m_direction(direction)
     { }
+
+    void calculate_layout() override {
+
+        auto [moving_axis, static_axis, moving_side, static_side] = [&] -> std::array<float gfx::Rect::*, 4> {
+            switch (m_direction) {
+                using enum Direction;
+                case Horizontal: return {
+                    &gfx::Rect::x,
+                    &gfx::Rect::y,
+                    &gfx::Rect::width,
+                    &gfx::Rect::height
+                };
+                case Vertical: return {
+                    &gfx::Rect::y,
+                    &gfx::Rect::x,
+                    &gfx::Rect::height,
+                    &gfx::Rect::width
+                };
+            }
+        }();
+
+
+        if (m_children.empty()) return;
+
+        auto tallest = std::ranges::max_element(m_children, [&](std::unique_ptr<Box>& a, decltype(a) b) {
+            return a->get_box().*static_side < b->get_box().*static_side;
+        });
+
+        m_box.*static_side = (*tallest)->get_box().*static_side;
+
+        assert(tallest != m_children.end());
+
+        m_box.*moving_side = std::ranges::fold_left(m_children, 0.0f, [&](float acc, std::unique_ptr<Box>& child) {
+            return acc + child->get_box().*moving_side;
+        });
+
+        float moving = 0;
+        for (auto& child : m_children) {
+            gfx::Rect& box = child->get_box();
+
+            // set the childs xy-position so it knows where to position its own children
+            box.*moving_axis = moving;
+            box.*static_axis = m_box.*static_axis;
+
+            child->calculate_layout();
+            // the child will set its width/height on its own
+            moving += box.*moving_side;
+        }
+    }
 
     void draw(gfx::Renderer& rd) const override {
         Box::draw(rd);
@@ -89,93 +152,10 @@ public:
         }
     }
 
-};
-
-class HorizontalContainer : public Container {
-public:
-    HorizontalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=0.0f)
-    : Container(std::move(children), color, margin)
-    { }
-
-    void calculate_layout() override {
-
-        if (m_children.empty()) return;
-
-        auto tallest = std::ranges::max_element(m_children, [](std::unique_ptr<Box>& a, decltype(a) b) {
-            return a->get_box().height < b->get_box().height;
-        });
-
-        m_box.height = (*tallest)->get_box().height;
-
-        assert(tallest != m_children.end());
-
-        m_box.width = std::ranges::fold_left(m_children, 0.0f, [](float acc, std::unique_ptr<Box>& child) {
-            return acc + child->get_box().width;
-        });
-
-        float x = 0;
-        for (auto& child : m_children) {
-            gfx::Rect& box = child->get_box();
-            // set the childs xy-position so it knows where to position its own children
-            box.x = x;
-            box.y = m_box.y;
-            child->calculate_layout();
-            // the child will set its width/height on its own
-            x += box.width;
-        }
-    }
-
     void print(int spacing) override {
         for (int i = 0; i < spacing; ++i)
             std::print(" ");
-
-        std::println("Horizontal {}", m_box);
-
-        for (auto& child : m_children) {
-            child->print(spacing+1);
-        }
-    }
-
-};
-
-class VerticalContainer : public Container {
-public:
-    VerticalContainer(std::vector<std::unique_ptr<Box>> children, gfx::Color color, float margin=0.0f)
-    : Container(std::move(children), color, margin)
-    { }
-
-    // TODO: maybe have an xy parameter?
-    void calculate_layout() override {
-
-        if (m_children.empty()) return;
-
-        auto widest = std::ranges::max_element(m_children, [](std::unique_ptr<Box>& a, decltype(a) b) {
-            return a->get_box().width < b->get_box().width;
-        });
-
-        m_box.width = (*widest)->get_box().width;
-
-        assert(widest != m_children.end());
-
-        m_box.height = std::ranges::fold_left(m_children, 0.0f, [](float acc, std::unique_ptr<Box>& child) {
-            return acc + child->get_box().height;
-        });
-
-        int y = m_box.y;
-        for (auto& child : m_children) {
-            gfx::Rect& box = child->get_box();
-            box.y = y;
-            box.x = m_box.x;
-            child->calculate_layout();
-            y += box.height;
-        }
-    }
-
-    void print(int spacing) override {
-        for (int i = 0; i < spacing; ++i)
-            std::print(" ");
-
-        std::println("Vertical {}", m_box);
+        std::println("Label {}", m_box);
 
         for (auto& child : m_children) {
             child->print(spacing+1);
@@ -208,7 +188,7 @@ public:
     void horizontal(gfx::Color color, Fn fn) {
         m_context.push({});
         fn();
-        auto container = std::make_unique<HorizontalContainer>(std::move(m_context.top()), color);
+        auto container = std::make_unique<Container>(std::move(m_context.top()), Container::Direction::Horizontal, color);
         m_context.pop();
         m_context.top().emplace_back(std::move(container));
     }
@@ -216,7 +196,7 @@ public:
     void vertical(gfx::Color color, Fn fn) {
         m_context.push({});
         fn();
-        auto container = std::make_unique<VerticalContainer>(std::move(m_context.top()), color);
+        auto container = std::make_unique<Container>(std::move(m_context.top()), Container::Direction::Vertical, color);
         m_context.pop();
         m_context.top().emplace_back(std::move(container));
     }
