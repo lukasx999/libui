@@ -24,6 +24,8 @@ public:
         return m_rect;
     }
 
+    virtual void handle_input() { }
+
     virtual void draw(gfx::Renderer& rd) const {
         auto color = m_is_debug_selected
             ? gfx::lerp(m_style.color_bg, gfx::Color::white(), 0.75f)

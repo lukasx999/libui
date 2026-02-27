@@ -33,8 +33,9 @@ public:
         add_child<Label>(text, font, style);
     }
 
-    void button(Style style={}) {
-        add_child<Button>(style);
+    Button::State button(Style style={}) {
+        auto& btn = add_child<Button>(style);
+        return btn.get_state();
     }
 
     void horizontal(Fn fn, Style style={}) {
@@ -52,10 +53,13 @@ private:
     Context& m_context;
 
     // add a child element into the current context
+    // returns a reference to the newly created child element
     template <std::derived_from<Box> Element>
-    void add_child(auto&&... args) {
+    Element& add_child(auto&&... args) {
         auto element = std::make_unique<Element>(m_window, std::forward<decltype(args)>(args)...);
+        Element& ret = *element;
         m_context.top().push_back(std::move(element));
+        return ret;
     }
 
     void container(Fn fn, Style style, Container::Direction direction) {
@@ -85,6 +89,7 @@ public:
         assert(m_context.size() == 1);
         auto& root = m_context.top().front();
         root->compute_layout();
+        // root->handle_input();
 
         root->debug();
         system("clear");
@@ -114,7 +119,14 @@ int main() {
         ui.root(rd, [&](ui::Ui& ui) {
 
             ui.label("foo", font, {.color_bg=gfx::Color::blue()});
-            ui.button({.color_bg=gfx::Color::red()});
+
+            bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
+            auto color = is_pressed
+                ? gfx::Color::blue()
+                : gfx::Color::gray();
+
+            ui.label("you pressed the button", font, {.color_bg=color});
+
             ui.label("world", font, {gfx::Color::blue()});
 
         }, {gfx::Color::black()});
