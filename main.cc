@@ -94,21 +94,18 @@ int main() {
 
         ui.root(rd, window, [&](ui::Ui& ui) {
 
+            ui.label("foo", font, {gfx::Color::green()});
+
             ui.vertical([&] {
-                ui.label("foo", font, {gfx::Color::green()});
 
                 ui.vertical([&] {
+                    ui.label("bar", font, {gfx::Color::red()});
+                    ui.label("baz", font, {gfx::Color::blue()});
+                }, {.color=gfx::Color::orange(), .padding=10.0f});
 
-                    ui.vertical([&] {
-                        ui.label("bar", font, {gfx::Color::red()});
-                        ui.label("baz", font, {gfx::Color::blue()});
-                    }, {.color=gfx::Color::orange()});
+                ui.label("world", font, {gfx::Color::green()});
 
-                    ui.label("world", font, {gfx::Color::orange()});
-
-                });
-
-            }, {gfx::Color::lightblue()});
+            });
 
         }, {gfx::Color::black()});
 

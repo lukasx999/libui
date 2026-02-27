@@ -116,26 +116,30 @@ protected:
 
     void compute_child_layouts() {
 
-        float axis = m_rect.*m_moving_axis + m_children.front()->get_style().margin;
+        float moving_axis = m_rect.*m_moving_axis + m_children.front()->get_style().margin + m_style.padding;
 
         for (auto& child : m_children) {
             gfx::Rect& rect = child->get_rect();
             const Style& style = child->get_style();
             float margin = style.margin;
 
-            rect.*m_moving_axis = axis + margin;
-            rect.*m_static_axis = m_rect.*m_static_axis + margin;
+            rect.*m_moving_axis = moving_axis + margin;
+            rect.*m_static_axis = m_rect.*m_static_axis + margin + m_style.padding;
 
             child->compute_layout();
 
             // we have to do this AFTER the child layout has been computed
             // as its dimensions (width/height) are not known before that point.
-            axis += rect.*m_moving_side + margin * 2.0f;
+            moving_axis += rect.*m_moving_side + margin * 2.0f;
         }
     }
 
     void compute_dimensions() {
+        compute_static_side();
+        compute_moving_side();
+    }
 
+    void compute_static_side() {
         auto largest_static_side = ranges::max_element(m_children, [&](const std::unique_ptr<Box>& a, decltype(a) b) {
             auto get_size = [&](decltype(a) child) {
                 return child->get_rect().*m_static_side + child->get_style().margin;
@@ -145,11 +149,16 @@ protected:
 
         assert(largest_static_side != m_children.end());
         auto& largest = **largest_static_side;
-        m_rect.*m_static_side = largest.get_rect().*m_static_side + largest.get_style().margin * 2.0f;
+        m_rect.*m_static_side = largest.get_rect().*m_static_side
+            + largest.get_style().margin * 2.0f
+            + m_style.padding * 2.0f;
+    }
+
+    void compute_moving_side() {
 
         m_rect.*m_moving_side = ranges::fold_left(m_children, 0.0f, [&](float acc, const std::unique_ptr<Box>& child) {
             return acc + child->get_rect().*m_moving_side + child->get_style().margin * 2.0f;
-        });
+        }) + m_style.padding * 2.0f;
     }
 
 };
