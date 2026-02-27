@@ -25,7 +25,13 @@ public:
         auto color = m_is_debug_selected
             ? gfx::lerp(m_style.color, gfx::Color::white(), 0.75f)
             : m_style.color;
-        rd.draw_rectangle(m_rect, color);
+
+        // draw_rectangle_rounded() actually draws 4 circles and 2 rectangles,
+        // which might impact performance, even when the border radius is 0.
+        if (m_style.border_radius == 0.0f)
+            rd.draw_rectangle(m_rect, color);
+        else
+            rd.draw_rectangle_rounded(m_rect, color, m_style.border_radius);
     }
 
     virtual void compute_layout() { }

@@ -94,14 +94,14 @@ int main() {
 
         ui.root(rd, window, [&](ui::Ui& ui) {
 
-            ui.label("foo", font, {gfx::Color::green()});
+            ui.label("foo", font, {.color=gfx::Color::green()});
 
             ui.vertical([&] {
 
                 ui.vertical([&] {
                     ui.label("bar", font, {gfx::Color::red()});
                     ui.label("baz", font, {gfx::Color::blue()});
-                }, {.color=gfx::Color::orange(), .padding=10.0f});
+                }, {.color=gfx::Color::orange(), .padding=50.0f, .border_radius=30.0f});
 
                 ui.label("world", font, {gfx::Color::green()});
 
