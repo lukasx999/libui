@@ -26,31 +26,23 @@ public:
     { }
 
     void box(Style style={}) {
-        m_context.top().push_back(std::make_unique<Box>(m_window, style));
+        add_child<Box>(style);
     }
 
     void label(std::string_view text, const gfx::Font& font, Style style={}) {
-        m_context.top().push_back(std::make_unique<Label>(m_window, text, font, style));
+        add_child<Label>(text, font, style);
     }
 
     void button(Style style={}) {
-        m_context.top().push_back(std::make_unique<Button>(m_window, style));
+        add_child<Button>(style);
     }
 
     void horizontal(Fn fn, Style style={}) {
-        m_context.push({});
-        fn();
-        auto container = std::make_unique<Container>(m_window, std::move(m_context.top()), Container::Direction::Horizontal, style);
-        m_context.pop();
-        m_context.top().push_back(std::move(container));
+        container(fn, style, Container::Direction::Horizontal);
     }
 
     void vertical(Fn fn, Style style={}) {
-        m_context.push({});
-        fn();
-        auto container = std::make_unique<Container>(m_window, std::move(m_context.top()), Container::Direction::Vertical, style);
-        m_context.pop();
-        m_context.top().push_back(std::move(container));
+        container(fn, style, Container::Direction::Vertical);
     }
 
 private:
@@ -58,6 +50,21 @@ private:
 
     // context, used for temporarily storing the child elements in the current element context
     Context& m_context;
+
+    // add a child element into the current context
+    template <std::derived_from<Box> Element>
+    void add_child(auto&&... args) {
+        auto element = std::make_unique<Element>(m_window, std::forward<decltype(args)>(args)...);
+        m_context.top().push_back(std::move(element));
+    }
+
+    void container(Fn fn, Style style, Container::Direction direction) {
+        m_context.push({});
+        fn();
+        auto children = std::move(m_context.top());
+        m_context.pop();
+        add_child<Container>(std::move(children), direction, style);
+    }
 
 };
 

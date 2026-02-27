@@ -56,14 +56,14 @@ public:
 
     }
 
-    bool debug(gfx::Window& window) override {
+    bool debug() override {
 
         bool found = ranges::any_of(m_children, [&](const std::unique_ptr<Box>& child) {
-            return child->debug(window);
+            return child->debug();
         });
 
         if (not found)
-            return Box::debug(window);
+            return Box::debug();
 
         return true;
     }
