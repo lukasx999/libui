@@ -99,9 +99,15 @@ int main() {
                 ui.label("barrr", font, {gfx::Color::orange()});
 
                 ui.horizontal([&] {
-                    ui.label("hello", font, {gfx::Color::transparent()});
+
+                    ui.vertical([&] {
+                        ui.label("hello", font, {gfx::Color::transparent()});
+                        ui.label("foo", font, {gfx::Color::transparent()});
+                    }, {.color=gfx::Color::orange()});
+
                     ui.label("world", font, {gfx::Color::transparent()});
-                }, {.color=gfx::Color::green(), .margin=20.0f});
+
+                }, {.color=gfx::Color::green()});
 
             }, {gfx::Color::lightblue()});
 

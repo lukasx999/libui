@@ -17,15 +17,15 @@ public:
         return m_style;
     }
 
-    [[nodiscard]] gfx::Rect& get_box() {
-        return m_box;
+    [[nodiscard]] gfx::Rect& get_rect() {
+        return m_rect;
     }
 
     virtual void draw(gfx::Renderer& rd) const {
         auto color = m_is_debug_selected
             ? gfx::lerp(m_style.color, gfx::Color::white(), 0.75f)
             : m_style.color;
-        rd.draw_rectangle(m_box, color);
+        rd.draw_rectangle(m_rect, color);
     }
 
     virtual void compute_layout() { }
@@ -33,7 +33,7 @@ public:
     // returns whether the current element is selected by the cursor
     virtual bool debug(gfx::Window& window) {
         auto mouse = window.get_mouse_pos();
-        return m_is_debug_selected = m_box.check_collision_point(mouse);
+        return m_is_debug_selected = m_rect.check_collision_point(mouse);
     }
 
     virtual void print(int spacing) {
@@ -42,13 +42,13 @@ public:
 
         if (m_is_debug_selected)
             std::print("> ");
-        std::println("Box {}", m_box);
+        std::println("Box {}", m_rect);
     }
 
 protected:
     const Style m_style;
     bool m_is_debug_selected = false;
-    gfx::Rect m_box;
+    gfx::Rect m_rect;
 
 };
 

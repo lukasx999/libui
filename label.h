@@ -14,13 +14,13 @@ public:
         , m_text(text)
         , m_font(font)
     {
-        m_box.height = m_fontsize;
-        m_box.width = m_font.measure_text(m_text, m_fontsize);
+        m_rect.height = m_fontsize;
+        m_rect.width = m_font.measure_text(m_text, m_fontsize);
     }
 
     void draw(gfx::Renderer& rd) const override {
         Box::draw(rd);
-        rd.draw_text(m_box.x, m_box.y, m_fontsize, m_text, m_font, m_font_color);
+        rd.draw_text(m_rect.x, m_rect.y, m_fontsize, m_text, m_font, m_font_color);
     }
 
     void print(int spacing) override {
@@ -29,7 +29,7 @@ public:
 
         if (m_is_debug_selected)
             std::print("> ");
-        std::println("Label {} ({})", m_box, m_text);
+        std::println("Label {} ({})", m_rect, m_text);
     }
 
 private:
