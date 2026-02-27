@@ -9,6 +9,7 @@
 #include <gfx/gfx.h>
 
 #include "box.h"
+#include "button.h"
 #include "container.h"
 #include "label.h"
 
@@ -27,6 +28,10 @@ public:
 
     void label(std::string_view text, const gfx::Font& font, Style style={}) {
         m_context.top().push_back(std::make_unique<Label>(text, font, style));
+    }
+
+    void button(Style style={}) {
+        m_context.top().push_back(std::make_unique<Button>(style));
     }
 
     void horizontal(Fn fn, Style style={}) {
@@ -94,18 +99,9 @@ int main() {
 
         ui.root(rd, window, [&](ui::Ui& ui) {
 
-            ui.label("foo", font, {.color=gfx::Color::green()});
-
-            ui.vertical([&] {
-
-                ui.vertical([&] {
-                    ui.label("bar", font, {gfx::Color::red()});
-                    ui.label("baz", font, {gfx::Color::blue()});
-                }, {.color=gfx::Color::orange(), .padding=50.0f, .border_radius=30.0f});
-
-                ui.label("world", font, {gfx::Color::green()});
-
-            });
+            ui.label("foo", font, {.color_bg=gfx::Color::blue()});
+            ui.button({.color_bg=gfx::Color::red()});
+            ui.label("world", font, {gfx::Color::blue()});
 
         }, {gfx::Color::black()});
 

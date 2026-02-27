@@ -23,8 +23,8 @@ public:
 
     virtual void draw(gfx::Renderer& rd) const {
         auto color = m_is_debug_selected
-            ? gfx::lerp(m_style.color, gfx::Color::white(), 0.75f)
-            : m_style.color;
+            ? gfx::lerp(m_style.color_bg, gfx::Color::white(), 0.75f)
+            : m_style.color_bg;
 
         // draw_rectangle_rounded() actually draws 4 circles and 2 rectangles,
         // which might impact performance, even when the border radius is 0.

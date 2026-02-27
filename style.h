@@ -5,8 +5,9 @@
 namespace ui {
 
 // TODO: font
+// TODO: LabelStyle : Style (text_color)
 struct Style {
-    gfx::Color color = gfx::Color::black();
+    gfx::Color color_bg = gfx::Color::black();
     float margin = 0.0f;
     float padding = 0.0f;
     float border_radius = 0.0f;
