@@ -9,7 +9,10 @@ namespace ui {
 
 class Box {
 public:
-    explicit Box(Style style) : m_style(style) { }
+    Box(const gfx::Window& window, Style style)
+        : m_window(window)
+        , m_style(style)
+    { }
 
     virtual ~Box() = default;
 
@@ -37,8 +40,8 @@ public:
     virtual void compute_layout() { }
 
     // returns whether the current element is selected by the cursor
-    virtual bool debug(gfx::Window& window) {
-        auto mouse = window.get_mouse_pos();
+    virtual bool debug() {
+        auto mouse = m_window.get_mouse_pos();
         return m_is_debug_selected = m_rect.check_collision_point(mouse);
     }
 
@@ -52,6 +55,7 @@ public:
     }
 
 protected:
+    const gfx::Window& m_window;
     const Style m_style;
     bool m_is_debug_selected = false;
     gfx::Rect m_rect;

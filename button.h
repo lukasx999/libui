@@ -8,7 +8,9 @@ namespace ui {
 
 class Button : public Box {
 public:
-    explicit Button(Style style={}) : Box(style) {
+    Button(const gfx::Window& window, Style style={})
+        : Box(window, style)
+    {
         m_rect.width = 500;
         m_rect.height = 100;
     }
