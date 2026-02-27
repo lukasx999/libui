@@ -21,28 +21,28 @@ class Ui {
 public:
     explicit Ui(Context& context) : m_context(context) { }
 
-    void box(gfx::Color color, float margin=0.0f) {
-        m_context.top().emplace_back(std::make_unique<Box>(color, margin));
+    void box(Style style={}) {
+        m_context.top().push_back(std::make_unique<Box>(style));
     }
 
-    void label(std::string_view text, gfx::Color color, const gfx::Font& font, float margin=0.0f) {
-        m_context.top().emplace_back(std::make_unique<Label>(text, color, font, margin));
+    void label(std::string_view text, const gfx::Font& font, Style style={}) {
+        m_context.top().push_back(std::make_unique<Label>(text, font, style));
     }
 
-    void horizontal(gfx::Color color, Fn fn) {
+    void horizontal(Fn fn, Style style={}) {
         m_context.push({});
         fn();
-        auto container = std::make_unique<Container>(std::move(m_context.top()), Container::Direction::Horizontal, color);
+        auto container = std::make_unique<Container>(std::move(m_context.top()), Container::Direction::Horizontal, style);
         m_context.pop();
-        m_context.top().emplace_back(std::move(container));
+        m_context.top().push_back(std::move(container));
     }
 
-    void vertical(gfx::Color color, Fn fn) {
+    void vertical(Fn fn, Style style={}) {
         m_context.push({});
         fn();
-        auto container = std::make_unique<Container>(std::move(m_context.top()), Container::Direction::Vertical, color);
+        auto container = std::make_unique<Container>(std::move(m_context.top()), Container::Direction::Vertical, style);
         m_context.pop();
-        m_context.top().emplace_back(std::move(container));
+        m_context.top().push_back(std::move(container));
     }
 
 private:
@@ -58,9 +58,9 @@ class UserInterface {
 public:
     UserInterface() = default;
 
-    void root(gfx::Renderer& rd, gfx::Window& window, gfx::Color color, std::function<void(Ui&)> fn) {
+    void root(gfx::Renderer& rd, gfx::Window& window, std::function<void(Ui&)> fn, Style style={}) {
         m_context.push({});
-        m_ui.vertical(color, std::bind(fn, m_ui));
+        m_ui.vertical(std::bind(fn, m_ui), style);
 
         assert(m_context.size() == 1);
         auto& root = m_context.top().front();
@@ -92,17 +92,20 @@ int main() {
     window.draw_loop([&](gfx::Renderer& rd) {
         rd.clear_background(gfx::Color::black());
 
-        ui.root(rd, window, gfx::Color::black(), [&](ui::Ui& ui) {
+        ui.root(rd, window, [&](ui::Ui& ui) {
 
-            ui.vertical(gfx::Color::lightblue(), [&] {
-                ui.label("foo", gfx::Color::blue(), font, 10.0f);
-                ui.horizontal(gfx::Color::grey(), [&] {
-                    ui.label("a", gfx::Color::blue(), font);
-                    ui.label("b", gfx::Color::blue(), font);
-                });
-            });
+            ui.vertical([&] {
+                ui.label("foo", font, {gfx::Color::red()});
+                ui.label("barrr", font, {gfx::Color::orange()});
 
-        });
+                ui.horizontal([&] {
+                    ui.label("hello", font, {gfx::Color::transparent()});
+                    ui.label("world", font, {gfx::Color::transparent()});
+                }, {.color=gfx::Color::green(), .margin=20.0f});
+
+            }, {gfx::Color::lightblue()});
+
+        }, {gfx::Color::black()});
 
         if (window.get_key_state(gfx::Key::Escape).pressed())
             window.close();

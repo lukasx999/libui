@@ -3,18 +3,18 @@
 #include <print>
 #include <gfx/gfx.h>
 
+#include "style.h"
+
 namespace ui {
+
 class Box {
 public:
-    Box(gfx::Color color, float margin=0.0f)
-        : m_color(color)
-        , m_margin(margin)
-    { }
+    explicit Box(Style style) : m_style(style) { }
 
     virtual ~Box() = default;
 
-    [[nodiscard]] float get_margin() const {
-        return m_margin;
+    [[nodiscard]] const Style& get_style() const {
+        return m_style;
     }
 
     [[nodiscard]] gfx::Rect& get_box() {
@@ -23,8 +23,8 @@ public:
 
     virtual void draw(gfx::Renderer& rd) const {
         auto color = m_is_debug_selected
-            ? gfx::lerp(m_color, gfx::Color::white(), 0.75f)
-            : m_color;
+            ? gfx::lerp(m_style.color, gfx::Color::white(), 0.75f)
+            : m_style.color;
         rd.draw_rectangle(m_box, color);
     }
 
@@ -46,9 +46,8 @@ public:
     }
 
 protected:
-    const gfx::Color m_color;
+    const Style m_style;
     bool m_is_debug_selected = false;
-    const float m_margin;
     gfx::Rect m_box;
 
 };

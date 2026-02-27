@@ -1,14 +1,16 @@
 #pragma once
 
 #include <gfx/gfx.h>
+
 #include "box.h"
+#include "style.h"
 
 namespace ui {
 
 class Label : public Box {
 public:
-    Label(std::string_view text, gfx::Color color, const gfx::Font& font, float margin=0.0f)
-        : Box(color, margin)
+    Label(std::string_view text, const gfx::Font& font, Style style)
+        : Box(style)
         , m_text(text)
         , m_font(font)
     {

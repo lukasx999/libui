@@ -1,7 +1,9 @@
 #pragma once
 
 #include <gfx/gfx.h>
+
 #include "box.h"
+#include "style.h"
 
 namespace ranges = std::ranges;
 
@@ -11,8 +13,8 @@ class Container : public Box {
 public:
     enum class Direction { Horizontal, Vertical };
 
-    Container(std::vector<std::unique_ptr<Box>> children, Direction direction, gfx::Color color, float margin=0.0f)
-        : Box(color, margin)
+    Container(std::vector<std::unique_ptr<Box>> children, Direction direction, Style style)
+        : Box(style)
         , m_children(std::move(children))
         , m_direction(direction)
     {
@@ -101,16 +103,17 @@ protected:
 
     void compute_child_layouts() {
 
-        float axis = m_children.front()->get_margin();
+        float axis = m_box.*m_moving_axis + m_children.front()->get_style().margin;
 
         for (auto& child : m_children) {
             gfx::Rect& box = child->get_box();
-            float margin = child->get_margin();
+            auto& style = child->get_style();
+            float margin = style.margin;
 
-            box.*m_moving_axis = axis;
+            box.*m_moving_axis = axis + margin;
             box.*m_static_axis = m_box.*m_static_axis + margin;
 
-            axis += box.*m_moving_side + margin;
+            axis += box.*m_moving_side + margin * 2.0f;
 
             child->compute_layout();
         }
@@ -119,15 +122,18 @@ protected:
     void compute_dimensions() {
 
         auto largest_static_side = ranges::max_element(m_children, [&](const std::unique_ptr<Box>& a, decltype(a) b) {
-            return a->get_box().*m_static_side + a->get_margin() < b->get_box().*m_static_side + b->get_margin();
+            auto get_size = [&](decltype(a) child) {
+                return child->get_box().*m_static_side + child->get_style().margin;
+            };
+            return get_size(a) < get_size(b);
         });
 
-        m_box.*m_static_side = (*largest_static_side)->get_box().*m_static_side + (*largest_static_side)->get_margin()*2.0f;
-
         assert(largest_static_side != m_children.end());
+        auto& largest = **largest_static_side;
+        m_box.*m_static_side = largest.get_box().*m_static_side + largest.get_style().margin * 2.0f;
 
         m_box.*m_moving_side = ranges::fold_left(m_children, 0.0f, [&](float acc, const std::unique_ptr<Box>& child) {
-            return acc + child->get_box().*m_moving_side + child->get_margin()*2.0f;
+            return acc + child->get_box().*m_moving_side + child->get_style().margin * 2.0f;
         });
     }
 
