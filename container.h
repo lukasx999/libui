@@ -13,8 +13,8 @@ class Container : public Box {
 public:
     enum class Direction { Horizontal, Vertical };
 
-    Container(const gfx::Window& window, std::vector<std::unique_ptr<Box>> children, Direction direction, Style style)
-        : Box(window, style)
+    Container(const gfx::Window& window, std::vector<std::unique_ptr<Box>> children, gfx::Vec position, Direction direction, Style style)
+        : Box(window, position, style)
         , m_children(std::move(children))
         , m_direction(direction)
     {
@@ -44,14 +44,16 @@ public:
 
         // x/y-positions get passed down the tree, as individual elements dont know
         // their absolute position, and have to rely on their parent setting the position for them.
-        // in this case the root position (0, 0) is known.
+        // in this case the root position (0,0) is known.
         //
         // dimensions (width/height) are passed up the tree, as individual elements know their size,
         // but their parents dont, because their size depends on how many children they have
         compute_child_layouts();
 
         // we can only calculate our own dimensions AFTER the child layouts
-        // have been computed.
+        // have been computed. while some elements have a fixed width/height
+        // thats known upon construction, the dimensions of a child element that
+        // is a container itself, will only be known after compute_layout() has been called on it.
         compute_dimensions();
 
     }
@@ -149,6 +151,7 @@ protected:
 
         assert(largest_static_side != m_children.end());
         auto& largest = **largest_static_side;
+
         m_rect.*m_static_side = largest.get_rect().*m_static_side
             + largest.get_style().margin * 2.0f
             + m_style.padding * 2.0f;

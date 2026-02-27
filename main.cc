@@ -25,17 +25,23 @@ public:
         , m_context(context)
     { }
 
-    void box(Style style={}) {
-        add_child<Box>(style);
-    }
-
     void label(std::string_view text, const gfx::Font& font, Style style={}) {
-        add_child<Label>(text, font, style);
+        add_child<Label>(text, font, gfx::Vec(0.0f, 0.0f), style);
     }
 
     Button::State button(Style style={}) {
-        auto& btn = add_child<Button>(style);
+        auto& btn = add_child<Button>(gfx::Vec(0.0f, 0.0f), style);
         return btn.get_state();
+    }
+
+    void box(float width, float height, Style style={}) {
+        gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
+
+        auto& box = add_child<Box>(pos, style);
+        box.get_rect().width = width;
+        box.get_rect().height = height;
+
+        m_axis.y += height + style.margin * 2.0f;
     }
 
     void horizontal(Fn fn, Style style={}) {
@@ -52,6 +58,8 @@ private:
     // context, used for temporarily storing the child elements in the current element context
     Context& m_context;
 
+    gfx::Vec m_axis;
+
     // add a child element into the current context
     // returns a reference to the newly created child element
     template <std::derived_from<Box> Element>
@@ -63,11 +71,17 @@ private:
     }
 
     void container(Fn fn, Style style, Container::Direction direction) {
+        m_axis.x = style.padding;
+        m_axis.y = style.padding;
+
         m_context.push({});
         fn();
         auto children = std::move(m_context.top());
         m_context.pop();
-        add_child<Container>(std::move(children), direction, style);
+
+        add_child<Container>(std::move(children), gfx::Vec(m_axis.x-style.padding, m_axis.y-style.padding), direction, style);
+
+        m_axis = gfx::Vec::zero();
     }
 
 };
@@ -88,7 +102,7 @@ public:
 
         assert(m_context.size() == 1);
         auto& root = m_context.top().front();
-        root->compute_layout();
+        // root->compute_layout();
         // root->handle_input();
 
         root->debug();
@@ -118,16 +132,19 @@ int main() {
 
         ui.root(rd, [&](ui::Ui& ui) {
 
-            ui.label("foo", font, {.color_bg=gfx::Color::blue()});
+            ui.box(200, 50, {.color_bg=gfx::Color::red()});
+            ui.box(200, 50, {.color_bg=gfx::Color::blue()});
 
-            bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
-            auto color = is_pressed
-                ? gfx::Color::blue()
-                : gfx::Color::gray();
+            // ui.label("foo", font, {.color_bg=gfx::Color::blue()});
 
-            ui.label("you pressed the button", font, {.color_bg=color});
-
-            ui.label("world", font, {gfx::Color::blue()});
+            // bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
+            // auto color = is_pressed
+            //     ? gfx::Color::blue()
+            //     : gfx::Color::gray();
+            //
+            // ui.label("you pressed the button", font, {.color_bg=color});
+            //
+            // ui.label("world", font, {gfx::Color::blue()});
 
         }, {gfx::Color::black()});
 
