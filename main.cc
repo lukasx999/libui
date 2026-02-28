@@ -71,12 +71,12 @@ private:
     // static: y, height
     //
     // we use ptr-to-member syntax here to avoid code duplication.
-    float gfx::Vec::* m_moving_axis;
-    float gfx::Vec::* m_static_axis;
-    float gfx::Rect::* m_moving_side;
-    float gfx::Rect::* m_static_side;
+    float gfx::Vec::*  m_moving_axis = &gfx::Vec::y;
+    float gfx::Vec::*  m_static_axis = &gfx::Vec::x;
+    float gfx::Rect::* m_moving_side = &gfx::Rect::height;
+    float gfx::Rect::* m_static_side = &gfx::Rect::width;
 
-    gfx::Vec m_axis;
+    gfx::Vec m_axis = gfx::Vec::zero();
 
     // add a child element into the current context
     // returns a reference to the newly created child element
@@ -101,14 +101,13 @@ private:
 
     void container(Fn fn, Style style, Container::Direction direction) {
 
+        auto saved_axis = m_axis;
         auto moving_axis = m_moving_axis;
         auto static_axis = m_static_axis;
         auto moving_side = m_moving_side;
         auto static_side = m_static_side;
 
         set_axis(direction);
-        auto saved_axis = m_axis;
-
         m_axis.x += style.padding;
         m_axis.y += style.padding;
 
@@ -119,13 +118,12 @@ private:
 
         m_axis = saved_axis;
 
-        add_child<Container>(style, std::move(children), direction);
-
         m_moving_axis = moving_axis;
         m_static_axis = static_axis;
         m_moving_side = moving_side;
         m_static_side = static_side;
 
+        add_child<Container>(style, std::move(children), direction);
     }
 
     void set_axis(Container::Direction direction) {
