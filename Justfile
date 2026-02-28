@@ -4,5 +4,9 @@ run: build
 build: configure
     cmake --build build
 
+web:
+    emcmake cmake -Bbuild -GNinja
+    cmake --build build
+
 configure:
-    cmake -B build -G Ninja
+    cmake -Bbuild -GNinja

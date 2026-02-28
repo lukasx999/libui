@@ -10,6 +10,12 @@ project(Ui)
 find_package(gfx REQUIRED)
 add_executable(ui main.cc)
 
-target_compile_options(ui PRIVATE -Wall -Wextra -O0 -ggdb -fsanitize=address,undefined)
-target_link_options(ui PRIVATE -fsanitize=address,undefined)
+target_compile_options(ui PRIVATE -Wall -Wextra -O0 -ggdb)
+
+set(ASAN OFF)
+if (ASAN)
+    target_compile_options(ui PRIVATE -fsanitize=address,undefined)
+    target_link_options(ui PRIVATE -fsanitize=address,undefined)
+endif()
+
 target_link_libraries(ui PRIVATE gfx)
