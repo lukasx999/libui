@@ -23,15 +23,8 @@ public:
         rd.draw_text(m_rect.x, m_rect.y, m_fontsize, m_text, m_font, m_font_color);
     }
 
-    void print(int spacing) override {
-        for (int i = 0; i < spacing; ++i)
-            std::print(" ");
-
-        if (m_is_debug_selected)
-            std::print("> ");
-        else
-            std::print("  ");
-        std::println("  Label {} ({})", m_rect, m_text);
+    [[nodiscard]] std::string format() const override {
+        return std::format("Label ({})", m_text);
     }
 
 private:

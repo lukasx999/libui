@@ -40,6 +40,14 @@ public:
         compute_moving_side();
     }
 
+    void for_each_child(std::function<void(Box&)> fn) const override {
+        for (auto& child : m_children) {
+            fn(*child);
+        }
+    }
+
+    [[nodiscard]] std::string format() const override;
+
     bool debug() override {
 
         bool found = ranges::any_of(m_children, [&](const std::unique_ptr<Box>& child) {
@@ -57,22 +65,6 @@ public:
 
         for (const auto& child : m_children) {
             child->draw(rd);
-        }
-    }
-
-    void print(int spacing) override {
-        for (int i = 0; i < spacing; ++i)
-            std::print(" ");
-
-        if (m_is_debug_selected)
-            std::print("> ");
-        else
-            std::print("  ");
-        std::println("Container {}", m_rect);
-
-
-        for (auto& child : m_children) {
-            child->print(spacing+1);
         }
     }
 
@@ -110,3 +102,23 @@ protected:
 };
 
 } // namespace ui
+
+template <>
+struct std::formatter<ui::Container::Direction> : std::formatter<std::string> {
+    auto format(const ui::Container::Direction& state, std::format_context& ctx) const {
+        auto fmt = [&] {
+            switch (state) {
+                using enum ui::Container::Direction;
+                case Horizontal: return "Horizontal";
+                case Vertical: return "Vertical";
+            }
+            std::unreachable();
+        }();
+
+        return std::formatter<std::string>::format(fmt, ctx);
+    }
+};
+
+inline std::string ui::Container::format() const {
+    return std::format("Container ({})", m_direction);
+}

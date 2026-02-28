@@ -25,6 +25,12 @@ public:
         return m_rect;
     }
 
+    [[nodiscard]] bool is_debug_selected() const {
+        return m_is_debug_selected;
+    }
+
+    virtual void for_each_child([[maybe_unused]] std::function<void(Box&)> fn) const { }
+
     virtual void handle_input() { }
 
     virtual void draw(gfx::Renderer& rd) const {
@@ -46,15 +52,8 @@ public:
         return m_is_debug_selected = m_rect.check_collision_point(mouse);
     }
 
-    virtual void print(int spacing) {
-        for (int i = 0; i < spacing; ++i)
-            std::print(" ");
-
-        if (m_is_debug_selected)
-            std::print("> ");
-        else
-            std::print("  ");
-        std::println("  Box {}", m_rect);
+    [[nodiscard]] virtual std::string format() const {
+        return "Box";
     }
 
 protected:

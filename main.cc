@@ -11,18 +11,24 @@
 #include "container.h"
 #include "label.h"
 
+// TODO: inheriting style type for label
+// TODO: button with label
+// TODO: improve debug ui
+
 namespace ui {
 
-template <typename T>
 class Context {
 public:
     Context() = default;
 
-    void add(T value) {
-        m_context.top().push_back(std::move(value));
+    // add an element into the current frame
+    void add_element(std::unique_ptr<Box> element) {
+        m_context.top().push_back(std::move(element));
     }
 
-    std::vector<T> with_frame(std::function<void()> fn) {
+    // invoke a function in a newly created frame and return the child elements
+    // created in that frame
+    auto with_frame(std::function<void()> fn) -> std::vector<std::unique_ptr<Box>> {
         m_context.push({});
         fn();
         auto items = std::move(m_context.top());
@@ -31,7 +37,7 @@ public:
     }
 
 private:
-    std::stack<std::vector<T>> m_context;
+    std::stack<std::vector<std::unique_ptr<Box>>> m_context;
 
 };
 
@@ -39,7 +45,7 @@ class Ui {
     using Fn = std::function<void()>;
 
 public:
-    Ui(const gfx::Window& window, Context<std::unique_ptr<Box>>& context)
+    Ui(const gfx::Window& window, Context& context)
         : m_window(window)
         , m_context(context)
     { }
@@ -50,7 +56,6 @@ public:
 
     Button::State button(Style style={}) {
         auto& btn = add_child<Button>(style);
-        btn.handle_input();
         return btn.get_state();
     }
 
@@ -70,10 +75,7 @@ private:
     friend class UserInterface;
 
     const gfx::Window& m_window;
-
-    // context, used for temporarily storing the child elements in the current element context
-    Context<std::unique_ptr<Box>>& m_context;
-
+    Context& m_context;
     gfx::Vec m_axis = gfx::Vec::zero();
     Container::Direction m_direction = Container::Direction::Vertical;
 
@@ -101,8 +103,9 @@ private:
         }
 
         Element& element_ref = *element;
-        m_context.add(std::move(element));
+        m_context.add_element(std::move(element));
 
+        element_ref.handle_input();
         return element_ref;
     }
 
@@ -126,14 +129,12 @@ private:
 };
 
 class UserInterface {
-    Context<std::unique_ptr<Box>> m_context;
+    Context m_context;
     const gfx::Window& m_window;
     Ui m_ui{m_window, m_context};
 
 public:
-    explicit UserInterface(const gfx::Window& window)
-    : m_window(window)
-    { }
+    explicit UserInterface(const gfx::Window& window) : m_window(window) { }
 
     void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
 
@@ -145,11 +146,28 @@ public:
         auto& root = children.front();
 
         root->debug();
-        system("clear");
-        root->print(0);
         root->draw(rd);
 
+        system("clear");
+        print_tree(*root, 0);
+
         m_ui.m_axis = gfx::Vec::zero();
+    }
+
+    static void print_tree(const Box& box, int spacing) {
+        using namespace std::placeholders;
+
+        for (int i = 0; i < spacing; ++i)
+            std::print(" ");
+
+        if (box.is_debug_selected())
+            std::print(">");
+        else
+            std::print(" ");
+
+        std::println("{}", box.format());
+
+        box.for_each_child(std::bind(print_tree, _1, spacing+1));
     }
 
 };

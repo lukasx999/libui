@@ -54,16 +54,7 @@ public:
         rd.draw_rectangle_rounded(m_rect, color, m_style.border_radius);
     }
 
-    void print(int spacing) override {
-        for (int i = 0; i < spacing; ++i)
-            std::print(" ");
-
-        if (m_is_debug_selected)
-            std::print("> ");
-        else
-            std::print("  ");
-        std::println("Button {} ({})", m_rect, m_state == State::Pressed ? "pressed" : "");
-    }
+    [[nodiscard]] std::string format() const override;
 
 private:
     State m_state = State::Idle;
@@ -73,3 +64,25 @@ private:
 };
 
 } // namespace ui
+
+template <>
+struct std::formatter<ui::Button::State> : std::formatter<std::string> {
+    auto format(const ui::Button::State& state, std::format_context& ctx) const {
+
+        auto fmt = [&] {
+            switch (state) {
+                using enum ui::Button::State;
+                case Idle:    return "Idle";
+                case Hovered: return "Hovered";
+                case Pressed: return "Pressed";
+            }
+            std::unreachable();
+        }();
+
+        return std::formatter<std::string>::format(fmt, ctx);
+    }
+};
+
+inline std::string ui::Button::format() const {
+    return std::format("Button ({})", m_state);
+}
