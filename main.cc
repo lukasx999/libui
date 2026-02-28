@@ -100,8 +100,13 @@ private:
     }
 
     void container(Fn fn, Style style, Container::Direction direction) {
-        set_axis(direction);
 
+        auto moving_axis = m_moving_axis;
+        auto static_axis = m_static_axis;
+        auto moving_side = m_moving_side;
+        auto static_side = m_static_side;
+
+        set_axis(direction);
         auto saved_axis = m_axis;
 
         m_axis.x += style.padding;
@@ -115,6 +120,12 @@ private:
         m_axis = saved_axis;
 
         add_child<Container>(style, std::move(children), direction);
+
+        m_moving_axis = moving_axis;
+        m_static_axis = static_axis;
+        m_moving_side = moving_side;
+        m_static_side = static_side;
+
     }
 
     void set_axis(Container::Direction direction) {
@@ -155,12 +166,9 @@ public:
 
         assert(m_context.size() == 1);
         auto& root = m_context.top().front();
-        // root->compute_layout();
-        // root->handle_input();
-
-        // root->debug();
-        // system("clear");
-        // root->print(0);
+        root->debug();
+        system("clear");
+        root->print(0);
         root->draw(rd);
 
         m_ui.m_axis = gfx::Vec::zero();
@@ -186,26 +194,20 @@ int main() {
 
         ui.root(rd, [&](ui::Ui& ui) {
 
-            ui.vertical([&] {
-                ui.box(200, 50, {.color_bg=gfx::Color::red()});
-                ui.box(200, 50, {.color_bg=gfx::Color::blue(), .margin=10.0f});
-            }, {.color_bg=gfx::Color::green(), .padding=10.0f});
-
             ui.horizontal([&] {
                 ui.box(200, 50, {.color_bg=gfx::Color::orange()});
-                ui.box(200, 50, {.color_bg=gfx::Color::green()});
+                ui.box(200, 50, {.color_bg=gfx::Color::red()});
             });
 
-            // ui.label("foo", font, {.color_bg=gfx::Color::blue()});
+            ui.box(200, 50, {.color_bg=gfx::Color::blue()});
+            ui.box(200, 50, {.color_bg=gfx::Color::red()});
 
             // bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
             // auto color = is_pressed
             //     ? gfx::Color::blue()
             //     : gfx::Color::gray();
-            //
+
             // ui.label("you pressed the button", font, {.color_bg=color});
-            //
-            // ui.label("world", font, {gfx::Color::blue()});
 
         }, {gfx::Color::black()});
 

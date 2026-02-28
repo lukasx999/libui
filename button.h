@@ -11,7 +11,7 @@ public:
     enum class State { Idle, Hovered, Pressed };
 
     Button(const gfx::Window& window, gfx::Vec position, Style style)
-        : Box(window, position, style)
+        : Box(window, position, style, 0.0f, 0.0f)
     {
         m_rect.width = 500;
         m_rect.height = 100;

@@ -12,7 +12,7 @@ add_executable(ui main.cc)
 
 target_compile_options(ui PRIVATE -Wall -Wextra -O0 -ggdb)
 
-set(ASAN OFF)
+set(ASAN ON)
 if (ASAN)
     target_compile_options(ui PRIVATE -fsanitize=address,undefined)
     target_link_options(ui PRIVATE -fsanitize=address,undefined)

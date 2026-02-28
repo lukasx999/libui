@@ -9,7 +9,7 @@ namespace ui {
 
 class Box {
 public:
-    Box(const gfx::Window& window, gfx::Vec position, Style style, float width=0.0f, float height=0.0f)
+    Box(const gfx::Window& window, gfx::Vec position, Style style, float width, float height)
         : m_window(window)
         , m_style(style)
         , m_rect(position.x, position.y, width, height)
