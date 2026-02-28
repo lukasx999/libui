@@ -22,15 +22,15 @@ public:
         switch (m_direction) {
             using enum Direction;
 
-            case Horizontal: {
+            case Horizontal:
                 m_moving_side = &gfx::Rect::width;
                 m_static_side = &gfx::Rect::height;
-            } break;
+                break;
 
-            case Vertical: {
+            case Vertical:
                 m_moving_side = &gfx::Rect::height;
                 m_static_side = &gfx::Rect::width;
-            } break;
+                break;
         }
     }
 
@@ -95,13 +95,14 @@ protected:
         m_rect.*m_static_side = largest.get_rect().*m_static_side
             + largest.get_style().margin * 2.0f
             + m_style.padding * 2.0f;
-
     }
 
     void compute_moving_side() {
-        m_rect.*m_moving_side = ranges::fold_left(m_children, 0.0f, [&](float acc, const std::unique_ptr<Box>& child) {
+        float child_sum = ranges::fold_left(m_children, 0.0f, [&](float acc, const std::unique_ptr<Box>& child) {
             return acc + child->get_rect().*m_moving_side + child->get_style().margin * 2.0f;
-        }) + m_style.padding * 2.0f;
+        });
+
+        m_rect.*m_moving_side = child_sum + m_style.padding * 2.0f;
     }
 
 };

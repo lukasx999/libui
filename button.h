@@ -11,7 +11,7 @@ public:
     enum class State { Idle, Hovered, Pressed };
 
     Button(const gfx::Window& window, gfx::Vec position, Style style)
-        : Box(window, position, style, 0.0f, 0.0f)
+    : Box(window, position, style, 0.0f, 0.0f)
     {
         m_rect.width = 500;
         m_rect.height = 100;
@@ -48,6 +48,7 @@ public:
                 case Hovered: return m_color_hover;
                 case Pressed: return m_color_press;
             }
+            std::unreachable();
         }();
 
         rd.draw_rectangle_rounded(m_rect, color, m_style.border_radius);

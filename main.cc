@@ -31,6 +31,7 @@ public:
 
     Button::State button(Style style={}) {
         auto& btn = add_child<Button>(style);
+        btn.handle_input();
         return btn.get_state();
     }
 
@@ -78,11 +79,11 @@ private:
 
     // add a child element into the current context
     // returns a reference to the newly created child element
-    template <std::derived_from<Box> Element>
-    Element& add_child(Style style, auto&&... args) {
+    template <std::derived_from<Box> Element, typename... Args>
+    Element& add_child(Style style, Args&&... args) {
 
         gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
-        auto element = std::make_unique<Element>(m_window, pos, style, std::forward<decltype(args)>(args)...);
+        auto element = std::make_unique<Element>(m_window, pos, style, std::forward<Args>(args)...);
 
         if constexpr (std::is_same_v<Element, Container>)
             element->compute_dimensions();
@@ -198,12 +199,12 @@ int main() {
             ui.box(200, 50, {.color_bg=gfx::Color::blue()});
             ui.box(200, 50, {.color_bg=gfx::Color::lightblue()});
 
-            // bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
-            // auto color = is_pressed
-            //     ? gfx::Color::blue()
-            //     : gfx::Color::gray();
+            bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
+            auto color = is_pressed
+                ? gfx::Color::blue()
+                : gfx::Color::gray();
+            ui.label("you pressed the button", font, {.color_bg=color});
 
-            // ui.label("you pressed the button", font, {.color_bg=color});
 
         }, {gfx::Color::black()});
 

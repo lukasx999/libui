@@ -33,10 +33,10 @@ public:
     }
 
 private:
+    const int m_fontsize = 50;
     const std::string_view m_text;
     const gfx::Font& m_font;
     const gfx::Color m_font_color = gfx::Color::white();
-    const int m_fontsize = 50;
 
 };
 
