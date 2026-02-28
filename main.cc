@@ -16,11 +16,10 @@
 namespace ui {
 
 class Ui {
-    using Context = std::stack<std::vector<std::unique_ptr<Box>>>;
     using Fn = std::function<void()>;
 
 public:
-    Ui(const gfx::Window& window, Context& context)
+    Ui(const gfx::Window& window, std::stack<std::vector<std::unique_ptr<Box>>>& context)
         : m_window(window)
         , m_context(context)
     { }
@@ -51,7 +50,7 @@ private:
     const gfx::Window& m_window;
 
     // context, used for temporarily storing the child elements in the current element context
-    Context& m_context;
+    std::stack<std::vector<std::unique_ptr<Box>>>& m_context;
 
     friend class UserInterface;
 
@@ -70,7 +69,7 @@ private:
     // static: y, height
     //
     // we use ptr-to-member syntax here to avoid code duplication.
-    // TODO: dont initialize for root
+    // TODO: dont initialize for vertical root
     float gfx::Vec::*  m_moving_axis = &gfx::Vec::y;
     float gfx::Vec::*  m_static_axis = &gfx::Vec::x;
     float gfx::Rect::* m_moving_side = &gfx::Rect::height;
@@ -89,14 +88,14 @@ private:
         if constexpr (std::is_same_v<Element, Container>)
             element->compute_dimensions();
 
-        Element& ret = *element;
-        m_context.top().push_back(std::move(element));
-
         // we have to do this AFTER the child container layouts have been computed,
         // as their dimensions (width/height) are not known before that point.
-        m_axis.*m_moving_axis += ret.get_rect().*m_moving_side + style.margin * 2.0f;
+        m_axis.*m_moving_axis += element->get_rect().*m_moving_side + style.margin * 2.0f;
 
-        return ret;
+        Element& element_ref = *element;
+        m_context.top().push_back(std::move(element));
+
+        return element_ref;
     }
 
     void container(Fn fn, Style style, Container::Direction direction) {
