@@ -52,7 +52,9 @@ public:
 
         if (m_is_debug_selected)
             std::print("> ");
-        std::println("Box {}", m_rect);
+        else
+            std::print("  ");
+        std::println("  Box {}", m_rect);
     }
 
 protected:

@@ -70,6 +70,7 @@ private:
     // static: y, height
     //
     // we use ptr-to-member syntax here to avoid code duplication.
+    // TODO: dont initialize for root
     float gfx::Vec::*  m_moving_axis = &gfx::Vec::y;
     float gfx::Vec::*  m_static_axis = &gfx::Vec::x;
     float gfx::Rect::* m_moving_side = &gfx::Rect::height;
@@ -116,7 +117,6 @@ private:
         m_context.pop();
 
         m_axis = saved_axis;
-
         m_moving_axis = moving_axis;
         m_static_axis = static_axis;
         m_moving_side = moving_side;

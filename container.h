@@ -66,6 +66,8 @@ public:
 
         if (m_is_debug_selected)
             std::print("> ");
+        else
+            std::print("  ");
         std::println("Container {}", m_rect);
 
 

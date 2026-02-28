@@ -29,7 +29,9 @@ public:
 
         if (m_is_debug_selected)
             std::print("> ");
-        std::println("Label {} ({})", m_rect, m_text);
+        else
+            std::print("  ");
+        std::println("  Label {} ({})", m_rect, m_text);
     }
 
 private:

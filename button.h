@@ -60,7 +60,9 @@ public:
 
         if (m_is_debug_selected)
             std::print("> ");
-        std::println("Button {}", m_rect);
+        else
+            std::print("  ");
+        std::println("Button {} ({})", m_rect, m_state == State::Pressed ? "pressed" : "");
     }
 
 private:
