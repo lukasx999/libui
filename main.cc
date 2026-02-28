@@ -35,8 +35,6 @@ public:
     }
 
     void box(float width, float height, Style style={}) {
-        // TODO: Container* m_container;
-        // TODO: container.add_child()
         add_child<Box>(style, width, height);
     }
 
@@ -198,7 +196,7 @@ int main() {
             });
 
             ui.box(200, 50, {.color_bg=gfx::Color::blue()});
-            ui.box(200, 50, {.color_bg=gfx::Color::red()});
+            ui.box(200, 50, {.color_bg=gfx::Color::lightblue()});
 
             // bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
             // auto color = is_pressed
