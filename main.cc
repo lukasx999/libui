@@ -1,8 +1,6 @@
-#include <numeric>
 #include <print>
 #include <vector>
 #include <memory>
-#include <ranges>
 #include <functional>
 #include <stack>
 
@@ -14,6 +12,28 @@
 #include "label.h"
 
 namespace ui {
+
+template <typename T>
+class Context {
+public:
+    Context() = default;
+
+    void add(T value) {
+        m_context.top().push_back(std::move(value));
+    }
+
+    std::vector<T> with_frame(std::function<void()> fn) {
+        m_context.push({});
+        fn();
+        auto items = std::move(m_context.top());
+        m_context.pop();
+        return items;
+    }
+
+private:
+    std::stack<std::vector<T>> m_context;
+
+};
 
 class Ui {
     using Fn = std::function<void()>;
@@ -47,35 +67,15 @@ public:
     }
 
 private:
+    friend class UserInterface;
+
     const gfx::Window& m_window;
 
     // context, used for temporarily storing the child elements in the current element context
     std::stack<std::vector<std::unique_ptr<Box>>>& m_context;
 
-    friend class UserInterface;
-
-    // the "moving" components correspond to the direction in which the containers
-    // children get laid out.
-    //
-    // the moving axis is incremented to place the children along the xy-axis.
-    // the static axis just stays the same for all children.
-    //
-    // eg: vertical layout
-    // moving: y, height
-    // static: x, width
-    //
-    // eg: horizontal layout
-    // moving: x, width
-    // static: y, height
-    //
-    // we use ptr-to-member syntax here to avoid code duplication.
-    // TODO: dont initialize for vertical root
-    float gfx::Vec::*  m_moving_axis = &gfx::Vec::y;
-    float gfx::Vec::*  m_static_axis = &gfx::Vec::x;
-    float gfx::Rect::* m_moving_side = &gfx::Rect::height;
-    float gfx::Rect::* m_static_side = &gfx::Rect::width;
-
     gfx::Vec m_axis = gfx::Vec::zero();
+    Container::Direction m_direction = Container::Direction::Vertical;
 
     // add a child element into the current context
     // returns a reference to the newly created child element
@@ -88,9 +88,17 @@ private:
         if constexpr (std::is_same_v<Element, Container>)
             element->compute_dimensions();
 
-        // we have to do this AFTER the child container layouts have been computed,
-        // as their dimensions (width/height) are not known before that point.
-        m_axis.*m_moving_axis += element->get_rect().*m_moving_side + style.margin * 2.0f;
+        switch (m_direction) {
+            using enum Container::Direction;
+
+            case Vertical:
+                m_axis.y += element->get_rect().height + style.margin * 2.0f;
+                break;
+
+            case Horizontal:
+                m_axis.x += element->get_rect().width + style.margin * 2.0f;
+                break;
+        }
 
         Element& element_ref = *element;
         m_context.top().push_back(std::move(element));
@@ -100,13 +108,10 @@ private:
 
     void container(Fn fn, Style style, Container::Direction direction) {
 
+        auto saved_direction = m_direction;
         auto saved_axis = m_axis;
-        auto moving_axis = m_moving_axis;
-        auto static_axis = m_static_axis;
-        auto moving_side = m_moving_side;
-        auto static_side = m_static_side;
 
-        set_axis(direction);
+        m_direction = direction;
         m_axis.x += style.padding;
         m_axis.y += style.padding;
 
@@ -116,32 +121,9 @@ private:
         m_context.pop();
 
         m_axis = saved_axis;
-        m_moving_axis = moving_axis;
-        m_static_axis = static_axis;
-        m_moving_side = moving_side;
-        m_static_side = static_side;
+        m_direction = saved_direction;
 
         add_child<Container>(style, std::move(children), direction);
-    }
-
-    void set_axis(Container::Direction direction) {
-        switch (direction) {
-            using enum Container::Direction;
-
-            case Horizontal: {
-                m_moving_axis = &gfx::Vec::x;
-                m_static_axis = &gfx::Vec::y;
-                m_moving_side = &gfx::Rect::width;
-                m_static_side = &gfx::Rect::height;
-            } break;
-
-            case Vertical: {
-                m_moving_axis = &gfx::Vec::y;
-                m_static_axis = &gfx::Vec::x;
-                m_moving_side = &gfx::Rect::height;
-                m_static_side = &gfx::Rect::width;
-            } break;
-        }
     }
 
 };
