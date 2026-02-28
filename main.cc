@@ -39,7 +39,7 @@ class Ui {
     using Fn = std::function<void()>;
 
 public:
-    Ui(const gfx::Window& window, std::stack<std::vector<std::unique_ptr<Box>>>& context)
+    Ui(const gfx::Window& window, Context<std::unique_ptr<Box>>& context)
         : m_window(window)
         , m_context(context)
     { }
@@ -72,7 +72,7 @@ private:
     const gfx::Window& m_window;
 
     // context, used for temporarily storing the child elements in the current element context
-    std::stack<std::vector<std::unique_ptr<Box>>>& m_context;
+    Context<std::unique_ptr<Box>>& m_context;
 
     gfx::Vec m_axis = gfx::Vec::zero();
     Container::Direction m_direction = Container::Direction::Vertical;
@@ -101,7 +101,7 @@ private:
         }
 
         Element& element_ref = *element;
-        m_context.top().push_back(std::move(element));
+        m_context.add(std::move(element));
 
         return element_ref;
     }
@@ -115,10 +115,7 @@ private:
         m_axis.x += style.padding;
         m_axis.y += style.padding;
 
-        m_context.push({});
-        fn();
-        auto children = std::move(m_context.top());
-        m_context.pop();
+        auto children = m_context.with_frame(fn);
 
         m_axis = saved_axis;
         m_direction = saved_direction;
@@ -129,7 +126,7 @@ private:
 };
 
 class UserInterface {
-    std::stack<std::vector<std::unique_ptr<Box>>> m_context;
+    Context<std::unique_ptr<Box>> m_context;
     const gfx::Window& m_window;
     Ui m_ui{m_window, m_context};
 
@@ -139,20 +136,22 @@ public:
     { }
 
     void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
-        m_context.push({});
-        m_ui.vertical(std::bind(fn, m_ui), style);
 
-        assert(m_context.size() == 1);
-        auto& root = m_context.top().front();
+        auto children = m_context.with_frame([&] {
+            m_ui.vertical(std::bind(fn, m_ui), style);
+        });
+
+        assert(children.size() == 1);
+        auto& root = children.front();
+
         root->debug();
         system("clear");
         root->print(0);
         root->draw(rd);
 
         m_ui.m_axis = gfx::Vec::zero();
-        m_context.pop();
-        assert(m_context.empty());
     }
+
 };
 
 
