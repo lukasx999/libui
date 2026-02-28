@@ -9,10 +9,10 @@ namespace ui {
 
 class Box {
 public:
-    Box(const gfx::Window& window, gfx::Vec position, Style style)
+    Box(const gfx::Window& window, gfx::Vec position, Style style, float width=0.0f, float height=0.0f)
         : m_window(window)
         , m_style(style)
-        , m_rect(position.x, position.y, 0.0f, 0.0f)
+        , m_rect(position.x, position.y, width, height)
     { }
 
     virtual ~Box() = default;
@@ -39,8 +39,6 @@ public:
         else
             rd.draw_rectangle_rounded(m_rect, color, m_style.border_radius);
     }
-
-    virtual void compute_layout() { }
 
     // returns whether the current element is selected by the cursor
     virtual bool debug() {

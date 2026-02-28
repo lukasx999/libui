@@ -13,7 +13,7 @@ class Container : public Box {
 public:
     enum class Direction { Horizontal, Vertical };
 
-    Container(const gfx::Window& window, std::vector<std::unique_ptr<Box>> children, gfx::Vec position, Direction direction, Style style)
+    Container(const gfx::Window& window, gfx::Vec position, Style style, std::vector<std::unique_ptr<Box>> children, Direction direction)
         : Box(window, position, style)
         , m_children(std::move(children))
         , m_direction(direction)
@@ -23,39 +23,21 @@ public:
             using enum Direction;
 
             case Horizontal: {
-                m_moving_axis = &gfx::Rect::x;
-                m_static_axis = &gfx::Rect::y;
                 m_moving_side = &gfx::Rect::width;
                 m_static_side = &gfx::Rect::height;
             } break;
 
             case Vertical: {
-                m_moving_axis = &gfx::Rect::y;
-                m_static_axis = &gfx::Rect::x;
                 m_moving_side = &gfx::Rect::height;
                 m_static_side = &gfx::Rect::width;
             } break;
         }
     }
 
-    void compute_layout() override {
-
+    void compute_dimensions() {
         if (m_children.empty()) return;
-
-        // x/y-positions get passed down the tree, as individual elements dont know
-        // their absolute position, and have to rely on their parent setting the position for them.
-        // in this case the root position (0,0) is known.
-        //
-        // dimensions (width/height) are passed up the tree, as individual elements know their size,
-        // but their parents dont, because their size depends on how many children they have
-        compute_child_layouts();
-
-        // we can only calculate our own dimensions AFTER the child layouts
-        // have been computed. while some elements have a fixed width/height
-        // thats known upon construction, the dimensions of a child element that
-        // is a container itself, will only be known after compute_layout() has been called on it.
-        compute_dimensions();
-
+        compute_static_side();
+        compute_moving_side();
     }
 
     bool debug() override {
@@ -96,50 +78,8 @@ protected:
     const std::vector<std::unique_ptr<Box>> m_children;
     const Direction m_direction;
 
-    // the "moving" components correspond to the direction in which the containers
-    // children get laid out.
-    //
-    // the moving axis is incremented to place the children along the xy-axis.
-    // the static axis just stays the same for all children.
-    //
-    // eg: vertical layout
-    // moving: y, height
-    // static: x, width
-    //
-    // eg: horizontal layout
-    // moving: x, width
-    // static: y, height
-    //
-    // we use ptr-to-member syntax here to avoid code duplication.
-    float gfx::Rect::* m_moving_axis;
-    float gfx::Rect::* m_static_axis;
     float gfx::Rect::* m_moving_side;
     float gfx::Rect::* m_static_side;
-
-    void compute_child_layouts() {
-
-        float moving_axis = m_rect.*m_moving_axis + m_children.front()->get_style().margin + m_style.padding;
-
-        for (auto& child : m_children) {
-            gfx::Rect& rect = child->get_rect();
-            const Style& style = child->get_style();
-            float margin = style.margin;
-
-            rect.*m_moving_axis = moving_axis + margin;
-            rect.*m_static_axis = m_rect.*m_static_axis + margin + m_style.padding;
-
-            child->compute_layout();
-
-            // we have to do this AFTER the child layout has been computed
-            // as its dimensions (width/height) are not known before that point.
-            moving_axis += rect.*m_moving_side + margin * 2.0f;
-        }
-    }
-
-    void compute_dimensions() {
-        compute_static_side();
-        compute_moving_side();
-    }
 
     void compute_static_side() {
         auto largest_static_side = ranges::max_element(m_children, [&](const std::unique_ptr<Box>& a, decltype(a) b) {
@@ -155,10 +95,10 @@ protected:
         m_rect.*m_static_side = largest.get_rect().*m_static_side
             + largest.get_style().margin * 2.0f
             + m_style.padding * 2.0f;
+
     }
 
     void compute_moving_side() {
-
         m_rect.*m_moving_side = ranges::fold_left(m_children, 0.0f, [&](float acc, const std::unique_ptr<Box>& child) {
             return acc + child->get_rect().*m_moving_side + child->get_style().margin * 2.0f;
         }) + m_style.padding * 2.0f;

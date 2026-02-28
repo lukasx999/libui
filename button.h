@@ -10,7 +10,7 @@ class Button : public Box {
 public:
     enum class State { Idle, Hovered, Pressed };
 
-    Button(const gfx::Window& window, gfx::Vec position, Style style={})
+    Button(const gfx::Window& window, gfx::Vec position, Style style)
         : Box(window, position, style)
     {
         m_rect.width = 500;

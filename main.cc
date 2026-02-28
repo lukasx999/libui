@@ -26,22 +26,16 @@ public:
     { }
 
     void label(std::string_view text, const gfx::Font& font, Style style={}) {
-        add_child<Label>(text, font, gfx::Vec(0.0f, 0.0f), style);
+        add_child<Label>(style, text, font);
     }
 
     Button::State button(Style style={}) {
-        auto& btn = add_child<Button>(gfx::Vec(0.0f, 0.0f), style);
+        auto& btn = add_child<Button>(style);
         return btn.get_state();
     }
 
     void box(float width, float height, Style style={}) {
-        gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
-
-        auto& box = add_child<Box>(pos, style);
-        box.get_rect().width = width;
-        box.get_rect().height = height;
-
-        m_axis.y += height + style.margin * 2.0f;
+        add_child<Box>(style, width, height);
     }
 
     void horizontal(Fn fn, Style style={}) {
@@ -58,30 +52,87 @@ private:
     // context, used for temporarily storing the child elements in the current element context
     Context& m_context;
 
+    friend class UserInterface;
+
+    // the "moving" components correspond to the direction in which the containers
+    // children get laid out.
+    //
+    // the moving axis is incremented to place the children along the xy-axis.
+    // the static axis just stays the same for all children.
+    //
+    // eg: vertical layout
+    // moving: y, height
+    // static: x, width
+    //
+    // eg: horizontal layout
+    // moving: x, width
+    // static: y, height
+    //
+    // we use ptr-to-member syntax here to avoid code duplication.
+    float gfx::Vec::* m_moving_axis;
+    float gfx::Vec::* m_static_axis;
+    float gfx::Rect::* m_moving_side;
+    float gfx::Rect::* m_static_side;
+
     gfx::Vec m_axis;
 
     // add a child element into the current context
     // returns a reference to the newly created child element
     template <std::derived_from<Box> Element>
-    Element& add_child(auto&&... args) {
-        auto element = std::make_unique<Element>(m_window, std::forward<decltype(args)>(args)...);
+    Element& add_child(Style style, auto&&... args) {
+
+        gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
+        auto element = std::make_unique<Element>(m_window, pos, style, std::forward<decltype(args)>(args)...);
+
+        if constexpr (std::is_same_v<Element, Container>)
+            element->compute_dimensions();
+
         Element& ret = *element;
         m_context.top().push_back(std::move(element));
+
+        // we have to do this AFTER the child container layouts have been computed,
+        // as their dimensions (width/height) are not known before that point.
+        m_axis.*m_moving_axis += ret.get_rect().*m_moving_side + style.margin * 2.0f;
+
         return ret;
     }
 
     void container(Fn fn, Style style, Container::Direction direction) {
-        m_axis.x = style.padding;
-        m_axis.y = style.padding;
+        set_axis(direction);
+
+        auto saved_axis = m_axis;
+
+        m_axis.x += style.padding;
+        m_axis.y += style.padding;
 
         m_context.push({});
         fn();
         auto children = std::move(m_context.top());
         m_context.pop();
 
-        add_child<Container>(std::move(children), gfx::Vec(m_axis.x-style.padding, m_axis.y-style.padding), direction, style);
+        m_axis = saved_axis;
 
-        m_axis = gfx::Vec::zero();
+        add_child<Container>(style, std::move(children), direction);
+    }
+
+    void set_axis(Container::Direction direction) {
+        switch (direction) {
+            using enum Container::Direction;
+
+            case Horizontal: {
+                m_moving_axis = &gfx::Vec::x;
+                m_static_axis = &gfx::Vec::y;
+                m_moving_side = &gfx::Rect::width;
+                m_static_side = &gfx::Rect::height;
+            } break;
+
+            case Vertical: {
+                m_moving_axis = &gfx::Vec::y;
+                m_static_axis = &gfx::Vec::x;
+                m_moving_side = &gfx::Rect::height;
+                m_static_side = &gfx::Rect::width;
+            } break;
+        }
     }
 
 };
@@ -105,11 +156,12 @@ public:
         // root->compute_layout();
         // root->handle_input();
 
-        root->debug();
-        system("clear");
-        root->print(0);
+        // root->debug();
+        // system("clear");
+        // root->print(0);
         root->draw(rd);
 
+        m_ui.m_axis = gfx::Vec::zero();
         m_context.pop();
         assert(m_context.empty());
     }
@@ -132,8 +184,15 @@ int main() {
 
         ui.root(rd, [&](ui::Ui& ui) {
 
-            ui.box(200, 50, {.color_bg=gfx::Color::red()});
-            ui.box(200, 50, {.color_bg=gfx::Color::blue()});
+            ui.vertical([&] {
+                ui.box(200, 50, {.color_bg=gfx::Color::red()});
+                ui.box(200, 50, {.color_bg=gfx::Color::blue(), .margin=10.0f});
+            }, {.color_bg=gfx::Color::green(), .padding=10.0f});
+
+            ui.horizontal([&] {
+                ui.box(200, 50, {.color_bg=gfx::Color::orange()});
+                ui.box(200, 50, {.color_bg=gfx::Color::green()});
+            });
 
             // ui.label("foo", font, {.color_bg=gfx::Color::blue()});
 

@@ -9,7 +9,7 @@ namespace ui {
 
 class Label : public Box {
 public:
-    Label(const gfx::Window& window, std::string_view text, const gfx::Font& font, gfx::Vec position, Style style)
+    Label(const gfx::Window& window, gfx::Vec position, Style style, std::string_view text, const gfx::Font& font)
         : Box(window, position, style)
         , m_text(text)
         , m_font(font)
