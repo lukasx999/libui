@@ -44,9 +44,9 @@ public:
         auto color = [&] {
             switch (m_state) {
                 using enum State;
-                case Idle: return m_style.color_bg;
-                case Hovered: return m_color_hover;
-                case Pressed: return m_color_press;
+                case Idle:    return m_style.color_bg;
+                case Hovered: return m_style.color_hover;
+                case Pressed: return m_style.color_press;
             }
             std::unreachable();
         }();
@@ -58,8 +58,6 @@ public:
 
 private:
     State m_state = State::Idle;
-    const gfx::Color m_color_hover = gfx::Color::white();
-    const gfx::Color m_color_press = gfx::Color::black();
 
 };
 

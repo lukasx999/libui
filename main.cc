@@ -196,7 +196,7 @@ int main() {
             auto color = is_pressed
                 ? gfx::Color::blue()
                 : gfx::Color::gray();
-            ui.label("you pressed the button", font, {.color_bg=color});
+            ui.label("you pressed the button", font, { .color_bg=color, .color_text=gfx::Color::red() });
 
 
         }, {gfx::Color::black()});

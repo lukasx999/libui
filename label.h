@@ -20,7 +20,7 @@ public:
 
     void draw(gfx::Renderer& rd) const override {
         Box::draw(rd);
-        rd.draw_text(m_rect.x, m_rect.y, m_fontsize, m_text, m_font, m_font_color);
+        rd.draw_text(m_rect.x, m_rect.y, m_fontsize, m_text, m_font, m_style.color_text);
     }
 
     [[nodiscard]] std::string format() const override {
@@ -31,7 +31,6 @@ private:
     const int m_fontsize = 50;
     const std::string_view m_text;
     const gfx::Font& m_font;
-    const gfx::Color m_font_color = gfx::Color::white();
 
 };
 
