@@ -10,12 +10,9 @@ class Button : public Box {
 public:
     enum class State { Idle, Hovered, Pressed };
 
-    Button(const gfx::Window& window, gfx::Vec position, Style style)
-    : Box(window, position, style, 0.0f, 0.0f)
-    {
-        m_rect.width = 500;
-        m_rect.height = 100;
-    }
+    Button(const gfx::Window& window, gfx::Vec position, Style style, float width, float height)
+    : Box(window, position, style, width, height)
+    { }
 
     [[nodiscard]] State get_state() const{
         return m_state;

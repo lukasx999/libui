@@ -145,9 +145,7 @@ public:
     void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
 
         auto children = m_context.with_frame([&] {
-            m_ui.vertical([&] {
-                fn(m_ui);
-            }, style);
+            m_ui.vertical(std::bind(fn, std::ref(m_ui)), style);
         });
 
         assert(children.size() == 1);
