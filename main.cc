@@ -11,7 +11,6 @@
 #include "container.h"
 #include "label.h"
 
-// TODO: inheriting style type for label
 // TODO: button with label
 
 namespace ui {
@@ -48,6 +47,12 @@ public:
         : m_window(window)
         , m_context(context)
     { }
+
+    ~Ui() = default;
+    Ui(const Ui&) = delete;
+    Ui(Ui&&) = delete;
+    Ui& operator=(const Ui&) = delete;
+    Ui& operator=(Ui&&) = delete;
 
     void label(std::string_view text, const gfx::Font& font, Style style={}) {
         add_child<Label>(style, text, font);
@@ -124,17 +129,25 @@ private:
 };
 
 class UserInterface {
-    Context m_context;
     const gfx::Window& m_window;
+    Context m_context;
     Ui m_ui{m_window, m_context};
 
 public:
     explicit UserInterface(const gfx::Window& window) : m_window(window) { }
 
+    ~UserInterface() = default;
+    UserInterface(const UserInterface&) = delete;
+    UserInterface(UserInterface&&) = delete;
+    UserInterface& operator=(const UserInterface&) = delete;
+    UserInterface& operator=(UserInterface&&) = delete;
+
     void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
 
         auto children = m_context.with_frame([&] {
-            m_ui.vertical(std::bind(fn, m_ui), style);
+            m_ui.vertical([&] {
+                fn(m_ui);
+            }, style);
         });
 
         assert(children.size() == 1);
@@ -160,7 +173,10 @@ public:
         else
             std::print(" ");
 
-        std::println("{}", box.format());
+        std::print("{}", box.format());
+
+        auto rect = box.get_rect();
+        std::println(" | {} {} {} {}", rect.x, rect.y, rect.width, rect.height);
 
         box.for_each_child(std::bind(print_tree, _1, spacing+1));
     }
@@ -184,22 +200,22 @@ int main() {
 
         ui.root(rd, [&](ui::Ui& ui) {
 
-            ui.horizontal([&] {
-                ui.box(200, 50, {.color_bg=gfx::Color::orange()});
-                ui.box(200, 50, {.color_bg=gfx::Color::red()});
-            });
+            // ui.horizontal([&] {
+            //     ui.box(200, 50, {.color_bg=gfx::Color::orange()});
+            //     ui.box(200, 50, {.color_bg=gfx::Color::red()});
+            // });
 
             ui.box(200, 50, {.color_bg=gfx::Color::blue()});
             ui.box(200, 50, {.color_bg=gfx::Color::lightblue()});
 
-            bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
-            auto color = is_pressed
-                ? gfx::Color::blue()
-                : gfx::Color::gray();
-            ui.label("you pressed the button", font, { .color_bg=color, .color_text=gfx::Color::red() });
+            // bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
+            // auto color = is_pressed
+            //     ? gfx::Color::blue()
+            //     : gfx::Color::gray();
+            // ui.label("you pressed the button", font, { .color_bg=color, .color_text=gfx::Color::red() });
 
 
-        }, {gfx::Color::black()});
+        }, { .color_bg=gfx::Color::black(), .padding=10.0f });
 
         if (window.get_key_state(gfx::Key::Escape).pressed())
             window.close();

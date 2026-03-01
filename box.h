@@ -24,6 +24,10 @@ public:
         return m_rect;
     }
 
+    [[nodiscard]] const gfx::Rect& get_rect() const {
+        return m_rect;
+    }
+
     [[nodiscard]] bool is_debug_selected() const {
         return m_is_debug_selected;
     }
