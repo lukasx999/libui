@@ -58,8 +58,8 @@ public:
         add_child<Label>(style, text, font);
     }
 
-    Button::State button(Style style={}) {
-        return add_child<Button>(style).get_state();
+    Button::State button(float width, float height, Style style={}) {
+        return add_child<Button>(style, width, height).get_state();
     }
 
     void box(float width, float height, Style style={}) {
