@@ -13,7 +13,6 @@
 
 // TODO: inheriting style type for label
 // TODO: button with label
-// TODO: improve debug ui
 
 namespace ui {
 
@@ -55,8 +54,7 @@ public:
     }
 
     Button::State button(Style style={}) {
-        auto& btn = add_child<Button>(style);
-        return btn.get_state();
+        return add_child<Button>(style).get_state();
     }
 
     void box(float width, float height, Style style={}) {
@@ -86,9 +84,6 @@ private:
 
         gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
         auto element = std::make_unique<Element>(m_window, pos, style, std::forward<Args>(args)...);
-
-        if constexpr (std::is_same_v<Element, Container>)
-            element->compute_dimensions();
 
         switch (m_direction) {
             using enum Container::Direction;

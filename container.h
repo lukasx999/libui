@@ -32,6 +32,8 @@ public:
                 m_static_side = &gfx::Rect::width;
                 break;
         }
+
+        compute_dimensions();
     }
 
     void compute_dimensions() {
