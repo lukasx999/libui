@@ -6,6 +6,7 @@ namespace ui {
 
 // TODO: font
 struct Style {
+    // Box
     gfx::Color color_bg = gfx::Color::black();
     float margin = 0.0f;
     float padding = 0.0f;

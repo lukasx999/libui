@@ -7,30 +7,12 @@
 #include <gfx/gfx.h>
 
 #include "box.h"
+#include "clickable.h"
 #include "button.h"
 #include "container.h"
 #include "label.h"
 
 namespace ui {
-
-class LabeledButton : public Label, public Button {
-public:
-    LabeledButton(const gfx::Window& window, gfx::Vec position, Style style, std::string_view text, const gfx::Font& font)
-        : Box(window, position, style, 0, 0)
-        , Label(window, position, style, text, font)
-        , Button(window, position, style, 0, 0)
-    { }
-
-    [[nodiscard]] std::string format() const override {
-        return std::format("LabeledButton ({})", m_state);
-    }
-
-    void draw(gfx::Renderer& rd) const override {
-        Button::draw(rd);
-        Label::draw(rd);
-    }
-
-};
 
 class Context {
 public:
@@ -75,12 +57,8 @@ public:
         add_child<Label>(style, text, font);
     }
 
-    void labeled_button(std::string_view text, const gfx::Font& font, Style style={}) {
-        add_child<LabeledButton>(style, text, font);
-    }
-
-    Button::State button(float width, float height, Style style={}) {
-        return add_child<Button>(style, width, height).get_state();
+    Clickable::State button(std::string_view text, const gfx::Font& font, Style style={}) {
+        return add_child<Button>(style, text, font).get_state();
     }
 
     void box(float width, float height, Style style={}) {
@@ -224,7 +202,7 @@ int main() {
             //     ui.box(200, 50, {.color_bg=gfx::Color::red()});
             // });
 
-            ui.labeled_button("hello", font);
+            ui.button("hello", font);
 
             ui.box(200, 50, {.color_bg=gfx::Color::blue()});
             ui.box(200, 50, {.color_bg=gfx::Color::lightblue()});
@@ -234,7 +212,6 @@ int main() {
             //     ? gfx::Color::blue()
             //     : gfx::Color::gray();
             // ui.label("you pressed the button", font, { .color_bg=color, .color_text=gfx::Color::red() });
-
 
         }, { .color_bg=gfx::Color::black(), .padding=10.0f });
 
