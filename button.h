@@ -6,7 +6,7 @@
 
 namespace ui {
 
-class Button : public Box {
+class Button : public virtual Box {
 public:
     enum class State { Idle, Hovered, Pressed };
 
@@ -53,7 +53,7 @@ public:
 
     [[nodiscard]] std::string format() const override;
 
-private:
+protected:
     State m_state = State::Idle;
 
 };

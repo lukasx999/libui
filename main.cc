@@ -11,9 +11,26 @@
 #include "container.h"
 #include "label.h"
 
-// TODO: button with label
-
 namespace ui {
+
+class LabeledButton : public Label, public Button {
+public:
+    LabeledButton(const gfx::Window& window, gfx::Vec position, Style style, std::string_view text, const gfx::Font& font)
+        : Box(window, position, style, 0, 0)
+        , Label(window, position, style, text, font)
+        , Button(window, position, style, 0, 0)
+    { }
+
+    [[nodiscard]] std::string format() const override {
+        return std::format("LabeledButton ({})", m_state);
+    }
+
+    void draw(gfx::Renderer& rd) const override {
+        Button::draw(rd);
+        Label::draw(rd);
+    }
+
+};
 
 class Context {
 public:
@@ -58,6 +75,10 @@ public:
         add_child<Label>(style, text, font);
     }
 
+    void labeled_button(std::string_view text, const gfx::Font& font, Style style={}) {
+        add_child<LabeledButton>(style, text, font);
+    }
+
     Button::State button(float width, float height, Style style={}) {
         return add_child<Button>(style, width, height).get_state();
     }
@@ -84,7 +105,7 @@ private:
 
     // add a child element into the current context
     // returns a reference to the newly created child element
-    template <std::derived_from<Box> Element, typename... Args>
+    template <class Element, typename... Args> requires std::is_base_of_v<Box, Element>
     Element& add_child(Style style, Args&&... args) {
 
         gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
@@ -202,6 +223,8 @@ int main() {
             //     ui.box(200, 50, {.color_bg=gfx::Color::orange()});
             //     ui.box(200, 50, {.color_bg=gfx::Color::red()});
             // });
+
+            ui.labeled_button("hello", font);
 
             ui.box(200, 50, {.color_bg=gfx::Color::blue()});
             ui.box(200, 50, {.color_bg=gfx::Color::lightblue()});
