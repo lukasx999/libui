@@ -42,8 +42,9 @@ class Ui {
     using Fn = std::function<void()>;
 
 public:
-    Ui(const gfx::Window& window, Context& context)
+    Ui(const gfx::Window& window, const gfx::Font& font, Context& context)
         : m_window(window)
+        , m_font(font)
         , m_context(context)
     { }
 
@@ -53,12 +54,12 @@ public:
     Ui& operator=(const Ui&) = delete;
     Ui& operator=(Ui&&) = delete;
 
-    void label(std::string_view text, const gfx::Font& font, Style style={}) {
-        add_child<Label>(style, text, font);
+    void label(std::string_view text, Style style={}) {
+        add_child<Label>(style, text, m_font);
     }
 
-    Clickable::State button(std::string_view text, const gfx::Font& font, Style style={}) {
-        return add_child<Button>(style, text, font).get_state();
+    Clickable::State button(std::string_view text, Style style={}) {
+        return add_child<Button>(style, text, m_font).get_state();
     }
 
     void box(float width, float height, Style style={}) {
@@ -77,6 +78,7 @@ private:
     friend class UserInterface;
 
     const gfx::Window& m_window;
+    const gfx::Font& m_font;
     Context& m_context;
     gfx::Vec m_axis = gfx::Vec::zero();
     Container::Direction m_direction = Container::Direction::Vertical;
@@ -129,11 +131,15 @@ private:
 
 class UserInterface {
     const gfx::Window& m_window;
+    gfx::Font m_font;
     Context m_context;
-    Ui m_ui{m_window, m_context};
+    Ui m_ui{m_window, m_font, m_context};
 
 public:
-    explicit UserInterface(const gfx::Window& window) : m_window(window) { }
+    explicit UserInterface(const gfx::Window& window)
+        : m_window(window)
+        , m_font(window.load_font("/usr/share/fonts/TTF/FiraCodeNerdFont-Regular.ttf"))
+    { }
 
     ~UserInterface() = default;
     UserInterface(const UserInterface&) = delete;
@@ -189,7 +195,6 @@ int main() {
         .enable_resizing(true);
 
     gfx::Window window(1920, 1080, "ui", flags);
-    auto font = window.load_font("/usr/share/fonts/TTF/FiraCodeNerdFont-Regular.ttf");
     ui::UserInterface ui(window);
 
     window.draw_loop([&](gfx::Renderer& rd) {
@@ -197,25 +202,19 @@ int main() {
 
         ui.root(rd, [&](ui::Ui& ui) {
 
-            // ui.horizontal([&] {
-            //     ui.box(200, 50, {.color_bg=gfx::Color::orange()});
-            //     ui.box(200, 50, {.color_bg=gfx::Color::red()});
-            // });
+            ui::Style button_style {
+                .color_bg=gfx::Color::orange(),
+                .padding=20.0f,
+                .border_radius=15.0f,
+            };
 
-            ui.button("hello", font);
+            if (ui.button("click me", button_style).is_pressed()) {
+                ui.label("you clicked the button!");
+            }
 
-            ui.box(200, 50, {.color_bg=gfx::Color::blue()});
-            ui.box(200, 50, {.color_bg=gfx::Color::lightblue()});
+        }, { .color_bg=gfx::Color::gray(), .padding=10.0f });
 
-            // bool is_pressed = ui.button({.color_bg=gfx::Color::red()}) == ui::Button::State::Pressed;
-            // auto color = is_pressed
-            //     ? gfx::Color::blue()
-            //     : gfx::Color::gray();
-            // ui.label("you pressed the button", font, { .color_bg=color, .color_text=gfx::Color::red() });
-
-        }, { .color_bg=gfx::Color::black(), .padding=10.0f });
-
-        if (window.get_key_state(gfx::Key::Escape).pressed())
+        if (window.get_key_state(gfx::Key::Escape).is_pressed())
             window.close();
     });
 

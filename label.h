@@ -14,13 +14,14 @@ public:
         , m_text(text)
         , m_font(font)
     {
-        m_rect.height = m_fontsize;
-        m_rect.width = m_font.measure_text(m_text, m_fontsize);
+        m_rect.height = m_fontsize + m_style.padding * 2.0f;
+        m_rect.width = m_font.measure_text(m_text, m_fontsize) + m_style.padding * 2.0f;
     }
 
     void draw(gfx::Renderer& rd) const override {
         Box::draw(rd);
-        rd.draw_text(m_rect.x, m_rect.y, m_fontsize, m_text, m_font, m_style.color_text);
+        float padding = m_style.padding;
+        rd.draw_text(m_rect.x + padding, m_rect.y + padding, m_fontsize, m_text, m_font, m_style.color_text);
     }
 
     [[nodiscard]] std::string format() const override {
