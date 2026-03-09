@@ -1,5 +1,7 @@
 #pragma once
 
+#include <print>
+
 #include <gfx/gfx.h>
 
 #include "box.h"
@@ -16,15 +18,24 @@ public:
     {
         m_rect.width = width + m_style.padding * 2.0f;
         m_rect.height = m_fontsize + m_style.padding * 2.0f;
+
+        m_window.set_char_callback([&](std::string string, [[maybe_unused]] char32_t codepoint) {
+            std::println("hello: {}", string);
+            m_text.append(std::move(string));
+        });
+    }
+
+    ~TextInput() {
+        m_window.clear_char_callback();
+    }
+
+    void handle_input() override {
     }
 
     void draw(gfx::Renderer& rd) const override {
         Box::draw(rd);
         float padding = m_style.padding;
         rd.draw_text(m_rect.x + padding, m_rect.y + padding, m_fontsize, m_text, m_font, m_style.color_text);
-    }
-
-    void handle_input() override {
     }
 
     [[nodiscard]] std::string format() const override {

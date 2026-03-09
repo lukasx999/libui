@@ -140,6 +140,7 @@ class UserInterface {
     gfx::Font m_font;
     Context m_context;
     Ui m_ui{m_window, m_font, m_context};
+    std::vector<std::unique_ptr<Box>> m_children;
 
 public:
     explicit UserInterface(const gfx::Window& window)
@@ -153,14 +154,17 @@ public:
     UserInterface& operator=(const UserInterface&) = delete;
     UserInterface& operator=(UserInterface&&) = delete;
 
-    void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
-
-        auto children = m_context.with_frame([&] {
+    void root(std::function<void(Ui&)> fn, Style style={}) {
+        m_children = m_context.with_frame([&] {
             m_ui.vertical(std::bind(fn, std::ref(m_ui)), style);
         });
+    }
 
-        assert(children.size() == 1);
-        auto& root = children.front();
+    void render(gfx::Renderer& rd) {
+        if (m_children.empty()) return;
+
+        assert(m_children.size() == 1);
+        auto& root = m_children.front();
 
         root->debug();
         root->draw(rd);

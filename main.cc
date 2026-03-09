@@ -4,6 +4,10 @@
 
 #include "ui.h"
 
+// TODO: fix textinput
+// TODO: char callback not being called
+// TODO: multiple char callbacks needed
+
 int main() {
 
     auto flags = gfx::WindowFlags()
@@ -17,7 +21,9 @@ int main() {
     window.draw_loop([&](gfx::Renderer& rd) {
         rd.clear_background(gfx::Color::black());
 
-        ui.root(rd, [&](ui::Ui& ui) {
+        ui.render(rd);
+
+        ui.root([&](ui::Ui& ui) {
 
             ui::Style button_style {
                 .color_bg=gfx::Color::orange(),
