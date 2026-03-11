@@ -20,7 +20,8 @@ public:
         m_rect.height = m_fontsize + m_style.padding * 2.0f;
 
         m_callback_id = m_window.add_char_callback([&](std::string string, [[maybe_unused]] char32_t codepoint) {
-            m_text.append(std::move(string));
+            if (m_is_selected)
+                m_text.append(std::move(string));
         });
     }
 
@@ -29,11 +30,8 @@ public:
     }
 
     void handle_input() override {
-        auto key = m_window.get_key_state(gfx::Key::Backspace);
-
-        if (key.is_clicked())
-            if (not m_text.empty())
-                m_text.pop_back();
+        handle_key_input();
+        handle_selection_input();
     }
 
     void draw(gfx::Renderer& rd) const override {
@@ -43,7 +41,7 @@ public:
     }
 
     [[nodiscard]] std::string format() const override {
-        return std::format("TextInput ({})", m_text);
+        return std::format("TextInput ({}) ({})", m_text, m_is_selected ? "Selected" : "");
     }
 
 protected:
@@ -51,6 +49,27 @@ protected:
     std::string& m_text;
     const gfx::Font& m_font;
     gfx::Window::CallbackId m_callback_id;
+    bool m_is_selected = false;
+
+    void handle_key_input() {
+
+        auto key = m_window.get_key_state(gfx::Key::Backspace);
+
+        if (key.is_clicked() and m_is_selected)
+            if (not m_text.empty())
+                m_text.pop_back();
+    }
+
+    void handle_selection_input() {
+        auto mouse = m_window.get_mouse_pos();
+        bool is_selected = m_rect.check_collision_point(mouse);
+        bool is_clicked = m_window.get_mouse_button_state(gfx::MouseButton::Left).is_clicked();
+
+        if (is_selected and is_clicked)
+            m_is_selected = true;
+        else if (is_clicked)
+            m_is_selected = false;
+    }
 
 };
 
