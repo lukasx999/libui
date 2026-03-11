@@ -44,7 +44,7 @@ class Ui {
     using Fn = std::function<void()>;
 
 public:
-    Ui(const gfx::Window& window, const gfx::Font& font, Context& context)
+    Ui(gfx::Window& window, const gfx::Font& font, Context& context)
         : m_window(window)
         , m_font(font)
         , m_context(context)
@@ -83,7 +83,7 @@ public:
 private:
     friend class UserInterface;
 
-    const gfx::Window& m_window;
+    gfx::Window& m_window;
     const gfx::Font& m_font;
     Context& m_context;
     gfx::Vec m_axis = gfx::Vec::zero();
@@ -136,14 +136,14 @@ private:
 };
 
 class UserInterface {
-    const gfx::Window& m_window;
+    gfx::Window& m_window;
     gfx::Font m_font;
     Context m_context;
     Ui m_ui{m_window, m_font, m_context};
     std::vector<std::unique_ptr<Box>> m_children;
 
 public:
-    explicit UserInterface(const gfx::Window& window)
+    explicit UserInterface(gfx::Window& window)
         : m_window(window)
         , m_font(window.load_font("/usr/share/fonts/TTF/FiraCodeNerdFont-Regular.ttf"))
     { }

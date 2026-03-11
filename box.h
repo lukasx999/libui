@@ -8,7 +8,7 @@ namespace ui {
 
 class Box {
 public:
-    Box(const gfx::Window& window, gfx::Vec position, Style style, float width, float height)
+    Box(gfx::Window& window, gfx::Vec position, Style style, float width, float height)
         : m_window(window)
         , m_style(style)
         , m_rect(position.x, position.y, width, height)
@@ -60,7 +60,7 @@ public:
     }
 
 protected:
-    const gfx::Window& m_window;
+    gfx::Window& m_window;
     const Style m_style;
     bool m_is_debug_selected = false;
     gfx::Rect m_rect;

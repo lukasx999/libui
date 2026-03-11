@@ -11,7 +11,7 @@ namespace ui {
 
 class TextInput : public Box {
 public:
-    TextInput(const gfx::Window& window, gfx::Vec position, Style style, const gfx::Font& font, float width, std::string& text)
+    TextInput(gfx::Window& window, gfx::Vec position, Style style, const gfx::Font& font, float width, std::string& text)
         : Box(window, position, style, 0.0f, 0.0f)
         , m_text(text)
         , m_font(font)
@@ -19,14 +19,14 @@ public:
         m_rect.width = width + m_style.padding * 2.0f;
         m_rect.height = m_fontsize + m_style.padding * 2.0f;
 
-        m_window.set_char_callback([&](std::string string, [[maybe_unused]] char32_t codepoint) {
+        m_callback_id = m_window.add_char_callback([&](std::string string, [[maybe_unused]] char32_t codepoint) {
             std::println("hello: {}", string);
-            m_text.append(std::move(string));
+            // m_text.append(std::move(string));
         });
     }
 
     ~TextInput() {
-        m_window.clear_char_callback();
+        m_window.remove_char_callback(m_callback_id);
     }
 
     void handle_input() override {
@@ -46,6 +46,7 @@ protected:
     const int m_fontsize = 50;
     std::string& m_text;
     const gfx::Font& m_font;
+    gfx::Window::CallbackId m_callback_id;
 
 };
 

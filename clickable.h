@@ -34,7 +34,7 @@ public:
         ClickState m_state;
     };
 
-    Clickable(const gfx::Window& window, gfx::Vec position, Style style, float width, float height)
+    Clickable(gfx::Window& window, gfx::Vec position, Style style, float width, float height)
     : Box(window, position, style, width, height)
     { }
 

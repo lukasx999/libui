@@ -13,7 +13,7 @@ class Container : public Box {
 public:
     enum class Direction { Horizontal, Vertical };
 
-    Container(const gfx::Window& window, gfx::Vec position, Style style, std::vector<std::unique_ptr<Box>> children, Direction direction)
+    Container(gfx::Window& window, gfx::Vec position, Style style, std::vector<std::unique_ptr<Box>> children, Direction direction)
         : Box(window, position, style, 0.0f, 0.0f)
         , m_children(std::move(children))
         , m_direction(direction)
