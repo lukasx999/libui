@@ -20,8 +20,7 @@ public:
         m_rect.height = m_fontsize + m_style.padding * 2.0f;
 
         m_callback_id = m_window.add_char_callback([&](std::string string, [[maybe_unused]] char32_t codepoint) {
-            std::println("hello: {}", string);
-            // m_text.append(std::move(string));
+            m_text.append(std::move(string));
         });
     }
 
@@ -30,6 +29,11 @@ public:
     }
 
     void handle_input() override {
+        auto key = m_window.get_key_state(gfx::Key::Backspace);
+
+        if (key.is_clicked())
+            if (not m_text.empty())
+                m_text.pop_back();
     }
 
     void draw(gfx::Renderer& rd) const override {

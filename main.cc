@@ -5,9 +5,7 @@
 #include "ui.h"
 
 // TODO: auxilary layout class
-// TODO: fix textinput
-// TODO: char callback not being called
-// TODO: multiple char callbacks needed
+// TODO: glfw repeated for text input backspace
 
 int main() {
 
