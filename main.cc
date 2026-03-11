@@ -20,9 +20,7 @@ int main() {
     window.draw_loop([&](gfx::Renderer& rd) {
         rd.clear_background(gfx::Color::black());
 
-        ui.render(rd);
-
-        ui.root([&](ui::Ui& ui) {
+        ui.root(rd, [&](ui::Ui& ui) {
 
             ui::Style button_style {
                 .color_bg=gfx::Color::orange(),

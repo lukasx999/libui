@@ -154,13 +154,11 @@ public:
     UserInterface& operator=(const UserInterface&) = delete;
     UserInterface& operator=(UserInterface&&) = delete;
 
-    void root(std::function<void(Ui&)> fn, Style style={}) {
+    void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
         m_children = m_context.with_frame([&] {
             m_ui.vertical(std::bind(fn, std::ref(m_ui)), style);
         });
-    }
 
-    void render(gfx::Renderer& rd) {
         if (m_children.empty()) return;
 
         assert(m_children.size() == 1);

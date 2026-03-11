@@ -29,6 +29,10 @@ public:
         m_window.remove_char_callback(m_callback_id);
     }
 
+    [[nodiscard]] bool is_selected() const {
+        return m_is_selected;
+    }
+
     void handle_input() override {
         handle_key_input();
         handle_selection_input();
