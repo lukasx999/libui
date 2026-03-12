@@ -8,6 +8,7 @@ namespace ui {
 
 class Box {
 public:
+    // TODO: explain what we need the id for
     using Id = uint64_t;
 
     Box(Id id, gfx::Window& window, gfx::Vec position, Style style, float width, float height)
@@ -17,11 +18,11 @@ public:
         , m_rect(position.x, position.y, width, height)
     { }
 
+    virtual ~Box() = default;
+
     [[nodiscard]] Id get_id() const {
         return m_id;
     }
-
-    virtual ~Box() = default;
 
     [[nodiscard]] const Style& get_style() const {
         return m_style;
