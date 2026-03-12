@@ -1,7 +1,7 @@
 #pragma once
 
+#include <any>
 #include <gfx/gfx.h>
-
 #include "style.h"
 
 namespace ui {
@@ -39,6 +39,12 @@ public:
     [[nodiscard]] bool is_debug_selected() const {
         return m_is_debug_selected;
     }
+
+    [[nodiscard]] virtual std::any export_state() const {
+        return {};
+    }
+
+    virtual void apply_state([[maybe_unused]] std::any state) { }
 
     virtual void for_each_child([[maybe_unused]] std::function<void(Box&)> fn) const { }
 

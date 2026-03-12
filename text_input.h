@@ -29,6 +29,14 @@ public:
         m_window.remove_char_callback(m_callback_id);
     }
 
+    [[nodiscard]] std::any export_state() const override {
+        return m_is_selected;
+    }
+
+    void apply_state(std::any state) override {
+        m_is_selected = std::any_cast<bool>(state);
+    }
+
     [[nodiscard]] bool is_selected() const {
         return m_is_selected;
     }
