@@ -34,8 +34,8 @@ public:
         ClickState m_state;
     };
 
-    Clickable(gfx::Window& window, gfx::Vec position, Style style, float width, float height)
-    : Box(window, position, style, width, height)
+    Clickable(Id id, gfx::Window& window, gfx::Vec position, Style style, float width, float height)
+    : Box(id, window, position, style, width, height)
     { }
 
     [[nodiscard]] State get_state() const{

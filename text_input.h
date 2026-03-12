@@ -11,8 +11,8 @@ namespace ui {
 
 class TextInput : public Box {
 public:
-    TextInput(gfx::Window& window, gfx::Vec position, Style style, const gfx::Font& font, float width, std::string& text)
-        : Box(window, position, style, 0.0f, 0.0f)
+    TextInput(Id id, gfx::Window& window, gfx::Vec position, Style style, const gfx::Font& font, float width, std::string& text)
+        : Box(id, window, position, style, 0.0f, 0.0f)
         , m_text(text)
         , m_font(font)
     {

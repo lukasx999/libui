@@ -8,11 +8,18 @@ namespace ui {
 
 class Box {
 public:
-    Box(gfx::Window& window, gfx::Vec position, Style style, float width, float height)
-        : m_window(window)
+    using Id = uint64_t;
+
+    Box(Id id, gfx::Window& window, gfx::Vec position, Style style, float width, float height)
+        : m_id(id)
+        , m_window(window)
         , m_style(style)
         , m_rect(position.x, position.y, width, height)
     { }
+
+    [[nodiscard]] Id get_id() const {
+        return m_id;
+    }
 
     virtual ~Box() = default;
 
@@ -60,6 +67,7 @@ public:
     }
 
 protected:
+    const Id m_id;
     gfx::Window& m_window;
     const Style m_style;
     bool m_is_debug_selected = false;

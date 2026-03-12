@@ -88,6 +88,7 @@ private:
     Context& m_context;
     gfx::Vec m_axis = gfx::Vec::zero();
     Container::Direction m_direction = Container::Direction::Vertical;
+    Box::Id m_id_counter = 0;
 
     // add a child element into the current context
     // returns a reference to the newly created child element
@@ -95,7 +96,7 @@ private:
     Element& add_child(Style style, Args&&... args) {
 
         gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
-        auto element = std::make_unique<Element>(m_window, pos, style, std::forward<Args>(args)...);
+        auto element = std::make_unique<Element>(m_id_counter++, m_window, pos, style, std::forward<Args>(args)...);
 
         switch (m_direction) {
             using enum Container::Direction;
@@ -139,7 +140,6 @@ class UserInterface {
     gfx::Window& m_window;
     gfx::Font m_font;
     Context m_context;
-    Ui m_ui{m_window, m_font, m_context};
     std::vector<std::unique_ptr<Box>> m_children;
 
 public:
@@ -155,8 +155,10 @@ public:
     UserInterface& operator=(UserInterface&&) = delete;
 
     void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
+        Ui ui(m_window, m_font, m_context);
+
         m_children = m_context.with_frame([&] {
-            m_ui.vertical(std::bind(fn, std::ref(m_ui)), style);
+            ui.vertical(std::bind(fn, std::ref(ui)), style);
         });
 
         if (m_children.empty()) return;
@@ -170,7 +172,7 @@ public:
         system("clear");
         print_tree(*root, 0);
 
-        m_ui.m_axis = gfx::Vec::zero();
+        ui.m_axis = gfx::Vec::zero();
     }
 
     static void print_tree(const Box& box, int spacing) {
@@ -187,7 +189,9 @@ public:
         std::print("{}", box.format());
 
         auto rect = box.get_rect();
-        std::println(" | {} {} {} {}", rect.x, rect.y, rect.width, rect.height);
+        std::print(" | {} {} {} {}", rect.x, rect.y, rect.width, rect.height);
+
+        std::println(" | {}", box.get_id());
 
         box.for_each_child(std::bind(print_tree, _1, spacing+1));
     }
