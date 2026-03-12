@@ -175,14 +175,14 @@ public:
         ui.m_axis = gfx::Vec::zero();
     }
 
-    void traverse_tree(std::function<void()> fn) {
-        auto& root = m_children.front();
-
-        [&](this auto& self, const Box& box) {
-            fn();
-            box.for_each_child(self);
-        }(root);
-    }
+    // void traverse_tree(std::function<void()> fn) {
+    //     auto& root = *m_children.front();
+    //
+    //     [&](this auto& self, const Box& box) {
+    //         fn();
+    //         box.for_each_child(self);
+    //     }(root);
+    // }
 
     static void print_tree(const Box& box, int spacing) {
         using namespace std::placeholders;
