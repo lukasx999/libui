@@ -13,7 +13,7 @@ int main() {
         .enable_resizing(true);
 
     gfx::Window window(1920, 1080, "ui", flags);
-    ui::UserInterface ui(window);
+    ui::Ui ui(window);
 
     std::string input("hello, input");
 

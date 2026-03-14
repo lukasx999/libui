@@ -41,14 +41,12 @@ private:
 };
 
 class Ui {
+public:
     using Fn = std::function<void()>;
 
-public:
-    Ui(gfx::Window& window, const gfx::Font& font, Context& context, const std::unordered_map<Box::Id, std::any>& stored_state)
+    explicit Ui(gfx::Window& window)
         : m_window(window)
-        , m_font(font)
-        , m_context(context)
-        , m_stored_state(stored_state)
+        , m_font(window.load_font("/usr/share/fonts/TTF/FiraCodeNerdFont-Regular.ttf"))
     { }
 
     ~Ui() = default;
@@ -81,16 +79,81 @@ public:
         container(fn, style, Container::Direction::Vertical);
     }
 
-private:
-    friend class UserInterface;
+    void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
 
+        m_children = m_context.with_frame([&] {
+            vertical(std::bind(fn, std::ref(*this)), style);
+        });
+
+        if (m_children.empty()) return;
+
+        assert(m_children.size() == 1);
+        auto& root = m_children.front();
+
+        root->debug();
+        root->draw(rd);
+
+        system("clear");
+        print_tree(*root, 0);
+
+        m_axis = gfx::Vec::zero();
+        m_id_counter = 0;
+        save_state();
+    }
+
+    static void print_tree(const Box& box, int spacing) {
+        using namespace std::placeholders;
+
+        for (int i = 0; i < spacing; ++i)
+            std::print(" ");
+
+        if (box.is_debug_selected())
+            std::print(">");
+        else
+            std::print(" ");
+
+        std::print("{}", box.format());
+
+        auto rect = box.get_rect();
+        std::print(" | {} {} {} {}", rect.x, rect.y, rect.width, rect.height);
+
+        std::println(" | {}", box.get_id());
+
+        box.for_each_child(std::bind(print_tree, _1, spacing+1));
+    }
+
+private:
     gfx::Window& m_window;
-    const gfx::Font& m_font;
-    Context& m_context;
+    gfx::Font m_font;
+    Context m_context;
+    std::vector<std::unique_ptr<Box>> m_children;
+    std::unordered_map<Box::Id, std::any> m_stored_state;
     gfx::Vec m_axis = gfx::Vec::zero();
     Container::Direction m_direction = Container::Direction::Vertical;
     Box::Id m_id_counter = 0;
-    const std::unordered_map<Box::Id, std::any>& m_stored_state;
+
+    void save_state() {
+        auto& root = *m_children.front();
+
+        m_stored_state.clear();
+
+        [&](this const auto& self, const Box& box) -> void {
+            m_stored_state[box.get_id()] = box.export_state();
+            box.for_each_child(self);
+        }(root);
+    }
+
+    // TODO:
+    [[nodiscard]] Box::Id generate_id() {
+        return m_id_counter++;
+    }
+
+    void restore_state(Box& element) const {
+        auto id = element.get_id();
+
+        if (m_stored_state.contains(id))
+            element.apply_state(m_stored_state.at(id));
+    }
 
     // add a child element into the current context
     // returns a reference to the newly created child element
@@ -98,12 +161,9 @@ private:
     Element& add_child(Style style, Args&&... args) {
 
         gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
-        auto element = std::make_unique<Element>(m_id_counter++, m_window, pos, style, std::forward<Args>(args)...);
+        auto element = std::make_unique<Element>(generate_id(), m_window, pos, style, std::forward<Args>(args)...);
 
-        // restore state
-        auto id = element->get_id();
-        if (m_stored_state.contains(id))
-            element->apply_state(m_stored_state.at(id));
+        restore_state(*element);
 
         switch (m_direction) {
             using enum Container::Direction;
@@ -139,84 +199,6 @@ private:
         m_direction = saved_direction;
 
         add_child<Container>(style, std::move(children), direction);
-    }
-
-};
-
-class UserInterface {
-public:
-    explicit UserInterface(gfx::Window& window)
-        : m_window(window)
-        , m_font(window.load_font("/usr/share/fonts/TTF/FiraCodeNerdFont-Regular.ttf"))
-    { }
-
-    ~UserInterface() = default;
-    UserInterface(const UserInterface&) = delete;
-    UserInterface(UserInterface&&) = delete;
-    UserInterface& operator=(const UserInterface&) = delete;
-    UserInterface& operator=(UserInterface&&) = delete;
-
-    void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
-
-        Ui ui(m_window, m_font, m_context, m_stored_state);
-
-        m_children = m_context.with_frame([&] {
-            ui.vertical(std::bind(fn, std::ref(ui)), style);
-        });
-
-        if (m_children.empty()) return;
-
-        assert(m_children.size() == 1);
-        auto& root = m_children.front();
-
-        root->debug();
-        root->draw(rd);
-
-        system("clear");
-        print_tree(*root, 0);
-
-        ui.m_axis = gfx::Vec::zero();
-
-        save_state();
-    }
-
-    static void print_tree(const Box& box, int spacing) {
-        using namespace std::placeholders;
-
-        for (int i = 0; i < spacing; ++i)
-            std::print(" ");
-
-        if (box.is_debug_selected())
-            std::print(">");
-        else
-            std::print(" ");
-
-        std::print("{}", box.format());
-
-        auto rect = box.get_rect();
-        std::print(" | {} {} {} {}", rect.x, rect.y, rect.width, rect.height);
-
-        std::println(" | {}", box.get_id());
-
-        box.for_each_child(std::bind(print_tree, _1, spacing+1));
-    }
-
-private:
-    gfx::Window& m_window;
-    gfx::Font m_font;
-    Context m_context;
-    std::vector<std::unique_ptr<Box>> m_children;
-    std::unordered_map<Box::Id, std::any> m_stored_state;
-
-    void save_state() {
-        auto& root = *m_children.front();
-
-        m_stored_state.clear();
-
-        [&](this const auto& self, const Box& box) -> void {
-            m_stored_state[box.get_id()] = box.export_state();
-            box.for_each_child(self);
-        }(root);
     }
 
 };
