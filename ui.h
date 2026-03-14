@@ -126,17 +126,19 @@ private:
     gfx::Window& m_window;
     gfx::Font m_font;
 
-    Context m_context;
+    // we keep the ui tree around, so installed event handlers will still get called
     std::vector<std::unique_ptr<Box>> m_children;
+
     std::unordered_map<Box::Id, std::any> m_stored_state;
+    Context m_context;
+
     gfx::Vec m_axis = gfx::Vec::zero();
     Container::Direction m_direction = Container::Direction::Vertical;
     Box::Id m_id_counter = 0;
 
     void save_state() {
-        auto& root = *m_children.front();
-
         m_stored_state.clear();
+        auto& root = *m_children.front();
 
         [&](this const auto& self, const Box& box) -> void {
             m_stored_state[box.get_id()] = box.export_state();
@@ -144,16 +146,16 @@ private:
         }(root);
     }
 
-    // TODO:
-    [[nodiscard]] Box::Id generate_id() {
-        return m_id_counter++;
-    }
-
     void restore_state(Box& element) const {
         auto id = element.get_id();
 
         if (m_stored_state.contains(id))
             element.apply_state(m_stored_state.at(id));
+    }
+
+    // TODO:
+    [[nodiscard]] Box::Id generate_id() {
+        return m_id_counter++;
     }
 
     // add a child element into the current context
