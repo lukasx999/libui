@@ -44,10 +44,11 @@ class Ui {
     using Fn = std::function<void()>;
 
 public:
-    Ui(gfx::Window& window, const gfx::Font& font, Context& context)
+    Ui(gfx::Window& window, const gfx::Font& font, Context& context, const std::unordered_map<Box::Id, std::any>& stored_state)
         : m_window(window)
         , m_font(font)
         , m_context(context)
+        , m_stored_state(stored_state)
     { }
 
     ~Ui() = default;
@@ -89,6 +90,7 @@ private:
     gfx::Vec m_axis = gfx::Vec::zero();
     Container::Direction m_direction = Container::Direction::Vertical;
     Box::Id m_id_counter = 0;
+    const std::unordered_map<Box::Id, std::any>& m_stored_state;
 
     // add a child element into the current context
     // returns a reference to the newly created child element
@@ -97,6 +99,11 @@ private:
 
         gfx::Vec pos(m_axis.x + style.margin, m_axis.y + style.margin);
         auto element = std::make_unique<Element>(m_id_counter++, m_window, pos, style, std::forward<Args>(args)...);
+
+        // restore state
+        auto id = element->get_id();
+        if (m_stored_state.contains(id))
+            element->apply_state(m_stored_state.at(id));
 
         switch (m_direction) {
             using enum Container::Direction;
@@ -137,11 +144,6 @@ private:
 };
 
 class UserInterface {
-    gfx::Window& m_window;
-    gfx::Font m_font;
-    Context m_context;
-    std::vector<std::unique_ptr<Box>> m_children;
-
 public:
     explicit UserInterface(gfx::Window& window)
         : m_window(window)
@@ -155,7 +157,8 @@ public:
     UserInterface& operator=(UserInterface&&) = delete;
 
     void root(gfx::Renderer& rd, std::function<void(Ui&)> fn, Style style={}) {
-        Ui ui(m_window, m_font, m_context);
+
+        Ui ui(m_window, m_font, m_context, m_stored_state);
 
         m_children = m_context.with_frame([&] {
             ui.vertical(std::bind(fn, std::ref(ui)), style);
@@ -173,16 +176,9 @@ public:
         print_tree(*root, 0);
 
         ui.m_axis = gfx::Vec::zero();
-    }
 
-    // void traverse_tree(std::function<void()> fn) {
-    //     auto& root = *m_children.front();
-    //
-    //     [&](this auto& self, const Box& box) {
-    //         fn();
-    //         box.for_each_child(self);
-    //     }(root);
-    // }
+        save_state();
+    }
 
     static void print_tree(const Box& box, int spacing) {
         using namespace std::placeholders;
@@ -203,6 +199,24 @@ public:
         std::println(" | {}", box.get_id());
 
         box.for_each_child(std::bind(print_tree, _1, spacing+1));
+    }
+
+private:
+    gfx::Window& m_window;
+    gfx::Font m_font;
+    Context m_context;
+    std::vector<std::unique_ptr<Box>> m_children;
+    std::unordered_map<Box::Id, std::any> m_stored_state;
+
+    void save_state() {
+        auto& root = *m_children.front();
+
+        m_stored_state.clear();
+
+        [&](this const auto& self, const Box& box) -> void {
+            m_stored_state[box.get_id()] = box.export_state();
+            box.for_each_child(self);
+        }(root);
     }
 
 };
