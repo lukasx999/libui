@@ -125,6 +125,7 @@ public:
 private:
     gfx::Window& m_window;
     gfx::Font m_font;
+
     Context m_context;
     std::vector<std::unique_ptr<Box>> m_children;
     std::unordered_map<Box::Id, std::any> m_stored_state;
