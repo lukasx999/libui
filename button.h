@@ -16,7 +16,7 @@ public:
     { }
 
     [[nodiscard]] std::string format() const override {
-        return std::format("LabeledButton ({})", m_state);
+        return std::format("Button ({})", m_state);
     }
 
     void draw(gfx::Renderer& rd) const override {

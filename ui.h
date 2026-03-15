@@ -96,9 +96,10 @@ public:
         system("clear");
         print_tree(*root, 0);
 
-        m_axis = gfx::Vec::zero();
-        m_id_counter = 0;
         save_state();
+        m_axis = gfx::Vec::zero();
+        m_parent_id = 0;
+        m_child_id = 1;
     }
 
     static void print_tree(const Box& box, int spacing) {
@@ -117,7 +118,7 @@ public:
         auto rect = box.get_rect();
         std::print(" | {} {} {} {}", rect.x, rect.y, rect.width, rect.height);
 
-        std::println(" | {}", box.get_id());
+        std::println(" | id={}", box.get_id());
 
         box.for_each_child(std::bind(print_tree, _1, spacing+1));
     }
@@ -134,16 +135,20 @@ private:
 
     gfx::Vec m_axis = gfx::Vec::zero();
     Container::Direction m_direction = Container::Direction::Vertical;
-    Box::Id m_id_counter = 0;
+    Box::Id m_parent_id = 0; // we use 0 here, because this makes the root id "01" and not "11"
+    Box::Id m_child_id = 1;
 
     void save_state() {
         m_stored_state.clear();
         auto& root = *m_children.front();
+        save_state_rec(root);
+    }
 
-        [&](this const auto& self, const Box& box) -> void {
-            m_stored_state[box.get_id()] = box.export_state();
-            box.for_each_child(self);
-        }(root);
+    void save_state_rec(const Box& box) {
+        using namespace std::placeholders;
+
+        m_stored_state[box.get_id()] = box.export_state();
+        box.for_each_child(std::bind(&Ui::save_state_rec, this, _1));
     }
 
     void restore_state(Box& element) const {
@@ -153,13 +158,13 @@ private:
             element.apply_state(m_stored_state.at(id));
     }
 
-    // TODO:
     [[nodiscard]] Box::Id generate_id() {
-        return m_id_counter++;
+        auto str = std::format("{}{}", m_parent_id, m_child_id);
+        Box::Id value;
+        std::from_chars<Box::Id>(str.c_str(), str.c_str()+str.size(), value);
+        return value;
     }
 
-    // add a child element into the current context
-    // returns a reference to the newly created child element
     template <class Element, typename... Args> requires std::is_base_of_v<Box, Element>
     Element& add_child(Style style, Args&&... args) {
 
@@ -183,6 +188,7 @@ private:
         Element& element_ref = *element;
         m_context.add_element(std::move(element));
 
+        m_child_id++;
         element_ref.handle_input();
         return element_ref;
     }
@@ -196,7 +202,13 @@ private:
         m_axis.x += style.padding;
         m_axis.y += style.padding;
 
+        auto old_parent_id = m_parent_id;
+        m_parent_id = m_child_id;
+
         auto children = m_context.with_frame(fn);
+
+        m_parent_id = old_parent_id;
+        m_child_id = 1;
 
         m_axis = saved_axis;
         m_direction = saved_direction;
