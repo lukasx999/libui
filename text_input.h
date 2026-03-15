@@ -16,7 +16,7 @@ public:
         , m_text(text)
         , m_font(font)
     {
-        m_rect.width = width + m_style.padding * 2.0f;
+        m_rect.width = std::max(static_cast<int>(width), m_font.measure_text(m_text, m_fontsize)) + m_style.padding * 2.0f;
         m_rect.height = m_fontsize + m_style.padding * 2.0f;
 
         m_callback_id = m_window.add_char_callback([&](std::string string, [[maybe_unused]] char32_t codepoint) {
