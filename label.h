@@ -25,7 +25,7 @@ public:
     }
 
     [[nodiscard]] std::string format() const override {
-        return std::format("Label ({})", m_text);
+        return std::format("Label (\"{}\")", m_text);
     }
 
 protected:

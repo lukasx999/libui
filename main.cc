@@ -22,6 +22,12 @@ int main() {
 
         ui.root(rd, [&](ui::Ui& ui) {
 
+            ui.horizontal([&] {
+                ui.label("hello");
+                ui.label("world");
+                ui.label(":)");
+            });
+
             ui::Style button_style {
                 .color_bg=gfx::Color::orange(),
                 .padding=20.0f,

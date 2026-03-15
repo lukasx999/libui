@@ -158,6 +158,7 @@ private:
             element.apply_state(m_stored_state.at(id));
     }
 
+    // TODO: account for the type of widget, so we dont get std::bad_any_cast
     [[nodiscard]] Box::Id generate_id() {
         auto str = std::format("{}{}", m_parent_id, m_child_id);
         Box::Id value;
